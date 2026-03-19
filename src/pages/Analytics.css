@@ -1,0 +1,110 @@
+.analytics-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+.city-table-card {
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+}
+
+/* Disruption bars */
+.disruption-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+
+.disruption-bar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.disruption-bar-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 140px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.disruption-bar-icon {
+  font-size: var(--text-lg);
+}
+
+.disruption-bar-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.disruption-bar-bg {
+  flex: 1;
+  height: 8px;
+  background: var(--neutral-800);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.disruption-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.disruption-bar-count {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 30px;
+  text-align: right;
+}
+
+.disruption-bar-payout {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 60px;
+  text-align: right;
+}
+
+@media (max-width: 1200px) {
+  .analytics-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .disruption-bar-label { min-width: 100px; }
+}
+
+.ai-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  color: #34d399;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
+}
+
+.full-width-chart {
+  grid-column: 1 / -1;
+}
+
+.chart-desc {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin-top: calc(-1 * var(--space-3));
+  margin-bottom: var(--space-6);
+  max-width: 600px;
+}

@@ -1,0 +1,242 @@
+.weather-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.weather-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.city-select {
+  min-width: 160px;
+}
+
+.refresh-btn.refreshing svg {
+  animation: spin-slow 1s linear infinite;
+}
+
+/* Current Conditions */
+.weather-current {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--space-6);
+}
+
+.weather-main-card {
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.weather-main-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.weather-timestamp {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.weather-main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: var(--space-3);
+}
+
+.temp-display {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.temp-value {
+  font-size: var(--text-5xl);
+  font-weight: 900;
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.weather-condition-text {
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+}
+
+.weather-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+.weather-metric {
+  padding: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.aqi-metric {
+  border-width: 1px;
+}
+
+.metric-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-value {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.2;
+}
+
+.metric-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Weather Charts */
+.weather-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+/* Risk Assessment */
+.risk-assessment-card {
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+}
+
+.risk-assessment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.risk-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.risk-metric-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+}
+
+.risk-metric-header span:first-child {
+  color: var(--text-secondary);
+}
+
+.risk-metric-value {
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.risk-summary {
+  display: flex;
+  gap: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--surface-glass-border);
+}
+
+.risk-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.risk-summary-item span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.risk-summary-item strong {
+  color: var(--text-primary);
+}
+
+/* Data Sources */
+.data-sources-card {
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+}
+
+.sources-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+
+.source-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.source-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.source-info strong {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.source-info span {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.source-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+
+.source-latency {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+@media (max-width: 1200px) {
+  .weather-current { grid-template-columns: 1fr; }
+  .weather-charts { grid-template-columns: 1fr; }
+  .risk-assessment-grid { grid-template-columns: repeat(2, 1fr); }
+  .sources-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .weather-metrics-grid { grid-template-columns: 1fr; }
+  .risk-assessment-grid { grid-template-columns: 1fr; }
+  .sources-grid { grid-template-columns: 1fr; }
+  .risk-summary { flex-direction: column; }
+}
