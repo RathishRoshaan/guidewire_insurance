@@ -8,7 +8,7 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { Link } from 'react-router-dom';
 import './AdminDashboard.css';
 
-const CHART_COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#10b981', '#0ea5e9', '#f59e0b', '#ef4444'];
+const CHART_COLORS = ['#14b8a6', '#0d9488', '#2dd4bf', '#fbbf24', '#f59e0b', '#0ea5e9', '#ef4444'];
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -40,17 +40,17 @@ export default function Dashboard() {
   const activeAlerts = alerts.filter(a => a.status === 'active');
 
   const stats = [
-    { label: 'Active Workers', value: activeWorkers, icon: Users, color: '#6366f1', bg: 'rgba(99,102,241,0.12)', change: '+12%', positive: true },
-    { label: 'Active Policies', value: activePolicies, icon: Shield, color: '#10b981', bg: 'rgba(16,185,129,0.12)', change: '+8%', positive: true },
-    { label: 'Weekly Premiums', value: `₹${(totalPremiums / 1000).toFixed(1)}K`, icon: DollarSign, color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)', change: '+15%', positive: true },
-    { label: 'Total Payouts', value: `₹${(totalPayouts / 1000).toFixed(1)}K`, icon: TrendingUp, color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', change: '-3%', positive: false },
+    { label: 'Active Workers', value: activeWorkers, icon: Users, color: 'var(--primary-400)', bg: 'rgba(20,184,166,0.12)', change: '+12%', positive: true },
+    { label: 'Active Policies', value: activePolicies, icon: Shield, color: 'var(--primary-400)', bg: 'rgba(20,184,166,0.12)', change: '+8%', positive: true },
+    { label: 'Weekly Premiums', value: `₹${(totalPremiums / 1000).toFixed(1)}K`, icon: DollarSign, color: 'var(--primary-400)', bg: 'rgba(20,184,166,0.12)', change: '+15%', positive: true },
+    { label: 'Total Payouts', value: `₹${(totalPayouts / 1000).toFixed(1)}K`, icon: TrendingUp, color: 'var(--accent-400)', bg: 'rgba(245,158,11,0.12)', change: '-3%', positive: false },
   ];
 
   const claimStatusData = [
-    { name: 'Paid', value: claims.filter(c => c.status === 'paid').length, color: '#10b981' },
-    { name: 'Auto-Approved', value: claims.filter(c => c.status === 'auto_approved').length, color: '#6366f1' },
-    { name: 'Pending', value: claims.filter(c => c.status === 'pending_review').length, color: '#f59e0b' },
-    { name: 'Flagged', value: flaggedClaims, color: '#ef4444' },
+    { name: 'Paid', value: claims.filter(c => c.status === 'paid').length, color: 'var(--primary-400)' },
+    { name: 'Auto-Approved', value: claims.filter(c => c.status === 'auto_approved').length, color: 'var(--primary-500)' },
+    { name: 'Pending', value: claims.filter(c => c.status === 'pending_review').length, color: 'var(--accent-400)' },
+    { name: 'Flagged', value: flaggedClaims, color: 'var(--danger-400)' },
   ].filter(d => d.value > 0);
 
   return (
@@ -60,7 +60,7 @@ export default function Dashboard() {
         <div className="dashboard-header">
           <div>
             <h1 className="page-title">Dashboard</h1>
-            <p className="page-subtitle">Real-time overview of GigShield operations</p>
+            <p className="page-subtitle">Real-time overview of GigCover operations</p>
           </div>
           <div className="header-actions">
             {activeAlerts.length > 0 && (
@@ -106,15 +106,15 @@ export default function Dashboard() {
             <AreaChart data={analytics.premiumCollection}>
               <defs>
                 <linearGradient id="premiumGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--primary-500)" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="var(--primary-500)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
               <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
-              <YAxis stroke="#64748b" fontSize={12} tickFormatter={v => `₹${(v/1000).toFixed(0)}K`} />
+              <YAxis stroke="#64748b" fontSize={12} tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="amount" stroke="#6366f1" fill="url(#premiumGrad)" strokeWidth={2} name="Revenue" />
+              <Area type="monotone" dataKey="amount" stroke="var(--primary-500)" fill="url(#premiumGrad)" strokeWidth={2} name="Revenue" />
             </AreaChart>
           </ResponsiveContainer>
         </div>

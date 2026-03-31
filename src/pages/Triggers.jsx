@@ -26,7 +26,7 @@ export default function Triggers() {
     switch (type) {
       case 'critical': return { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)', text: '#f87171' };
       case 'warning': return { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)', text: '#fbbf24' };
-      default: return { bg: 'rgba(14,165,233,0.08)', border: 'rgba(14,165,233,0.25)', text: '#38bdf8' };
+      default: return { bg: 'rgba(20,184,166,0.08)', border: 'rgba(20,184,166,0.25)', text: 'var(--primary-400)' };
     }
   };
 

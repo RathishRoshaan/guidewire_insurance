@@ -10,7 +10,7 @@ export default function Policies() {
   const [cityFilter, setCityFilter] = useState('all');
   const [selectedPolicy, setSelectedPolicy] = useState(null);
 
-  if (!data) return <div className="page-container"><div className="skeleton" style={{height: 400}} /></div>;
+  if (!data) return <div className="page-container"><div className="skeleton" style={{ height: 400 }} /></div>;
 
   const policies = data.policies || [];
 
@@ -44,8 +44,8 @@ export default function Policies() {
       {/* Stats */}
       <div className="grid-4 animate-fade-in-up delay-1">
         <div className="glass-card stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(99,102,241,0.12)' }}>
-            <Shield size={22} style={{ color: '#6366f1' }} />
+          <div className="stat-icon" style={{ background: 'rgba(20,184,166,0.12)' }}>
+            <Shield size={22} style={{ color: 'var(--primary-400)' }} />
           </div>
           <div className="stat-value">{stats.total}</div>
           <div className="stat-label">Total Policies</div>
@@ -58,17 +58,17 @@ export default function Policies() {
           <div className="stat-label">Active</div>
         </div>
         <div className="glass-card stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(14,165,233,0.12)' }}>
-            <Shield size={22} style={{ color: '#0ea5e9' }} />
+          <div className="stat-icon" style={{ background: 'rgba(20,184,166,0.12)' }}>
+            <Shield size={22} style={{ color: 'var(--primary-400)' }} />
           </div>
-          <div className="stat-value">₹{(stats.totalPremium/1000).toFixed(1)}K</div>
+          <div className="stat-value">₹{(stats.totalPremium / 1000).toFixed(1)}K</div>
           <div className="stat-label">Weekly Premiums</div>
         </div>
         <div className="glass-card stat-card">
           <div className="stat-icon" style={{ background: 'rgba(245,158,11,0.12)' }}>
             <Shield size={22} style={{ color: '#f59e0b' }} />
           </div>
-          <div className="stat-value">₹{(stats.totalCoverage/1000).toFixed(0)}K</div>
+          <div className="stat-value">₹{(stats.totalCoverage / 1000).toFixed(0)}K</div>
           <div className="stat-label">Total Coverage</div>
         </div>
       </div>
@@ -183,6 +183,16 @@ export default function Policies() {
                 <div className="detail-item"><span>Start Date</span><strong>{selectedPolicy.startDate}</strong></div>
                 <div className="detail-item"><span>End Date</span><strong>{selectedPolicy.endDate}</strong></div>
                 <div className="detail-item"><span>Auto-Renew</span><strong>{selectedPolicy.autoRenew ? '✅ Yes' : '❌ No'}</strong></div>
+                {selectedPolicy.exclusions && (
+                  <div className="detail-item full-width" style={{ gridColumn: '1/-1', marginTop: '1rem' }}>
+                    <span style={{ color: 'var(--danger-400)', fontWeight: '700', marginBottom: '0.5rem', display: 'block' }}>⚠️ Coverage Exclusions</span>
+                    <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      {selectedPolicy.exclusions.map((ex, i) => (
+                        <li key={i}>{ex}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           </div>

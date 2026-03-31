@@ -8,11 +8,10 @@ import {
   Zap,
   BarChart3,
   CloudLightning,
-  Settings,
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Bell,
+  MapPin,
   Umbrella,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -36,7 +35,7 @@ const workerNav = [
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const { data, isAdmin, currentUser, logout } = useApp();
+  const { data, isAdmin, currentUser, currentLocation, logout } = useApp();
   const location = useLocation();
 
   const navItems = isAdmin ? adminNav : workerNav;
@@ -51,7 +50,7 @@ export default function Sidebar() {
         </div>
         {!collapsed && (
           <div className="logo-text">
-            <span className="logo-name">GigShield</span>
+            <span className="logo-name">GigCover</span>
             <span className="logo-tagline">AI Insurance</span>
           </div>
         )}
@@ -83,17 +82,28 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Live Status */}
+      {/* Footer */}
       {!collapsed && (
         <div className="sidebar-footer">
           <div className="profile-section">
-            <div className="avatar-mini">{isAdmin ? 'A' : (currentUser?.firstName[0] || 'U')}</div>
+            <div className="avatar-mini">{isAdmin ? 'A' : (currentUser?.firstName?.[0] || 'U')}</div>
             <div className="profile-info">
-              <span className="profile-name">{isAdmin ? 'Admin' : currentUser?.firstName}</span>
-              <span className="profile-role">{isAdmin ? 'Manager' : 'Partner'}</span>
+              <span className="profile-name">
+                {isAdmin ? 'Admin User' : currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Guest Partner'}
+              </span>
+              <span className="profile-role">
+                {isAdmin ? 'Administrator' : currentUser ? `@${currentUser.username}` : 'Not Signed In'}
+              </span>
             </div>
           </div>
-          
+
+          {currentLocation && (
+            <div className="sidebar-location">
+              <MapPin size={12} />
+              <span>{currentLocation.name}{currentLocation.state ? `, ${currentLocation.state}` : ''}</span>
+            </div>
+          )}
+
           <button className="logout-btn-sidebar" onClick={logout}>
             <LogOut size={16} />
             <span>Sign Out</span>

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
+import { useState, useEffect } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import RiskAdvisor from './components/RiskAdvisor';
 import AdminDashboard from './pages/AdminDashboard';
@@ -39,13 +40,34 @@ function ToastContainer() {
 
 function AppContent() {
   const { isAdmin, isLoggedIn } = useApp();
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const handleError = (e) => {
+      console.error("Global Error Caught:", e);
+      setError(e.message || "Unknown error");
+    };
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+  if (error) {
+    return (
+      <div style={{ padding: '2rem', background: '#111', color: '#ff4444', height: '100vh' }}>
+        <h2>⚠️ System Crash Detected</h2>
+        <pre style={{ background: '#222', padding: '1rem', marginTop: '1rem' }}>{error}</pre>
+        <button onClick={() => window.location.href = '/'}>Attempt Restart</button>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return (
       <div className="login-layout">
         <Routes>
-          <Route path="*" element={<Login />} />
+          <Route path="/" element={<Login />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="*" element={<Login />} />
         </Routes>
         <ToastContainer />
       </div>

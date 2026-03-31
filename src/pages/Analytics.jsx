@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import './Analytics.css';
 
-const COLORS = ['#6366f1', '#10b981', '#0ea5e9', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+const COLORS = ['#14b8a6', '#0d9488', '#2dd4bf', '#fbbf24', '#f59e0b', '#0ea5e9', '#ef4444', '#8b5cf6'];
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -82,8 +82,8 @@ export default function Analytics() {
       {/* Top KPIs */}
       <div className="grid-4 animate-fade-in-up delay-1">
         <div className="glass-card stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(99,102,241,0.12)' }}>
-            <BarChart3 size={22} style={{ color: '#6366f1' }} />
+          <div className="stat-icon" style={{ background: 'rgba(20,184,166,0.12)' }}>
+            <BarChart3 size={22} style={{ color: 'var(--primary-400)' }} />
           </div>
           <div className="stat-value">₹{(totalRevenue / 100000).toFixed(1)}L</div>
           <div className="stat-label">Total Premium Revenue</div>
@@ -125,15 +125,15 @@ export default function Analytics() {
             }))}>
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--primary-400)" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="var(--primary-400)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
               <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
-              <YAxis stroke="#64748b" fontSize={12} tickFormatter={v => `₹${(v/1000).toFixed(0)}K`} />
+              <YAxis stroke="#64748b" fontSize={12} tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="amount" stroke="#6366f1" fill="url(#revGrad)" strokeWidth={2} name="Premium" />
+              <Area type="monotone" dataKey="amount" stroke="var(--primary-400)" fill="url(#revGrad)" strokeWidth={2} name="Premium" />
               <Bar dataKey="paid" fill="#ef4444" opacity={0.7} radius={[4, 4, 0, 0]} name="Claims Paid" />
             </ComposedChart>
           </ResponsiveContainer>
@@ -163,7 +163,7 @@ export default function Analytics() {
         <div className="glass-card chart-card full-width-chart">
           <div className="chart-header">
             <h3><Brain size={18} style={{ color: 'var(--accent-400)' }} /> AI Claim Volume Prediction (Next 48h)</h3>
-            <span className="badge badge-primary">Model: GigForecast v2.4</span>
+            <span className="badge badge-primary">Model: GigCover v2.4</span>
           </div>
           <p className="chart-desc">Projected claim volume surge based on meteorological alerts and historical monsoon patterns.</p>
           <ResponsiveContainer width="100%" height={320}>
@@ -172,13 +172,13 @@ export default function Analytics() {
               <XAxis dataKey="day" stroke="#64748b" fontSize={12} />
               <YAxis stroke="#64748b" fontSize={12} />
               <Tooltip content={<CustomTooltip />} />
-              <Line type="monotone" dataKey="actual" stroke="#6366f1" strokeWidth={3} dot={{ fill: '#6366f1', r: 5 }} name="Actual Claims" />
-              <Line type="monotone" dataKey="predicted" stroke="#10b981" strokeDasharray="5 5" strokeWidth={3} dot={{ fill: '#10b981', r: 4 }} name="Predicted Volume" />
+              <Line type="monotone" dataKey="actual" stroke="var(--primary-500)" strokeWidth={3} dot={{ fill: 'var(--primary-500)', r: 5 }} name="Actual Claims" />
+              <Line type="monotone" dataKey="predicted" stroke="var(--accent-500)" strokeDasharray="5 5" strokeWidth={3} dot={{ fill: 'var(--accent-500)', r: 4 }} name="Predicted Volume" />
               {/* Highlight area for prediction */}
               <defs>
                 <linearGradient id="predArea" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.1} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--accent-400)" stopOpacity={0.1} />
+                  <stop offset="100%" stopColor="var(--accent-400)" stopOpacity={0} />
                 </linearGradient>
               </defs>
             </LineChart>
@@ -224,7 +224,7 @@ export default function Analytics() {
               <PolarGrid stroke="rgba(255,255,255,0.08)" />
               <PolarAngleAxis dataKey="subject" stroke="#64748b" fontSize={12} />
               <PolarRadiusAxis stroke="rgba(255,255,255,0.1)" fontSize={10} />
-              <Radar name="Risk Level" dataKey="A" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} strokeWidth={2} />
+              <Radar name="Risk Level" dataKey="A" stroke="var(--primary-400)" fill="var(--primary-400)" fillOpacity={0.2} strokeWidth={2} />
             </RadarChart>
           </ResponsiveContainer>
         </div>

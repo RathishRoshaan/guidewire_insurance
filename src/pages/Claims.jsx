@@ -9,7 +9,7 @@ export default function Claims() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedClaim, setSelectedClaim] = useState(null);
 
-  if (!data) return <div className="page-container"><div className="skeleton" style={{height: 400}} /></div>;
+  if (!data) return <div className="page-container"><div className="skeleton" style={{ height: 400 }} /></div>;
 
   const claims = useMemo(() => {
     const all = data.claims || [];
@@ -43,8 +43,8 @@ export default function Claims() {
       {/* Stats */}
       <div className="claims-stats-grid animate-fade-in-up delay-1">
         <div className="glass-card stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(99,102,241,0.12)' }}>
-            <FileWarning size={22} style={{ color: '#6366f1' }} />
+          <div className="stat-icon" style={{ background: 'rgba(20,184,166,0.12)' }}>
+            <FileWarning size={22} style={{ color: 'var(--primary-400)' }} />
           </div>
           <div className="stat-value">{stats.total}</div>
           <div className="stat-label">Total Claims</div>
@@ -57,8 +57,8 @@ export default function Claims() {
           <div className="stat-label">Auto-Approved</div>
         </div>
         <div className="glass-card stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(14,165,233,0.12)' }}>
-            <DollarSign size={22} style={{ color: '#0ea5e9' }} />
+          <div className="stat-icon" style={{ background: 'rgba(20,184,166,0.12)' }}>
+            <DollarSign size={22} style={{ color: 'var(--primary-400)' }} />
           </div>
           <div className="stat-value">{stats.paid}</div>
           <div className="stat-label">Paid Out</div>
@@ -81,7 +81,7 @@ export default function Claims() {
           <div className="stat-icon" style={{ background: 'rgba(16,185,129,0.12)' }}>
             <DollarSign size={22} style={{ color: '#10b981' }} />
           </div>
-          <div className="stat-value">₹{(stats.totalPaid/1000).toFixed(1)}K</div>
+          <div className="stat-value">₹{(stats.totalPaid / 1000).toFixed(1)}K</div>
           <div className="stat-label">Total Paid</div>
         </div>
       </div>
@@ -148,7 +148,7 @@ export default function Claims() {
                   <td>
                     <div className="confidence-cell">
                       <div className="confidence-bar">
-                        <div className="confidence-fill" style={{ width: `${claim.triggerData.confidence}%` }} />
+                        <div className="confidence-fill" style={{ width: `${claim.triggerData.confidence}%`, background: 'var(--primary-500)' }} />
                       </div>
                       <span>{claim.triggerData.confidence}%</span>
                     </div>
@@ -208,6 +208,7 @@ export default function Claims() {
                   <div className="detail-item"><span>Platform</span><strong>{selectedClaim.platform}</strong></div>
                   <div className="detail-item"><span>Amount</span><strong className="text-accent">₹{selectedClaim.claimAmount.toLocaleString()}</strong></div>
                   <div className="detail-item"><span>Lost Hours</span><strong>{selectedClaim.lostHours} hrs</strong></div>
+                  <div className="detail-item"><span>Payout Method</span><strong>{selectedClaim.payoutMethod || 'UPI (Live)'}</strong></div>
                 </div>
               </div>
 

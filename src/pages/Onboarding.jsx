@@ -1,334 +1,370 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { 
-  UserPlus, MapPin, Truck, DollarSign, Shield, 
-  CheckCircle, ArrowRight, ArrowLeft, Sparkles, 
-  AlertCircle, ShieldCheck, Zap, Heart
+import {
+  UserPlus, MapPin, Truck, DollarSign, Shield,
+  CheckCircle, ArrowRight, ArrowLeft, Sparkles,
+  ShieldCheck, Zap, Heart, Lock, User, XCircle, Eye, EyeOff, Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './Onboarding.css';
 
-const STEPS = ['Personal Info', 'Work Details', 'AI Risk Profile', 'Choose Package', 'Review'];
+const STEPS = ['Identity', 'Profile', 'Work', 'Risk Analysis', 'Coverage', 'Activation'];
 
-const PACKAGES = [
-  {
-    id: 'basic',
-    name: 'Essential Guard',
-    icon: <Shield size={20} />,
-    color: 'var(--primary-400)',
-    multiplier: 0.8,
-    coverage: 0.6,
-    features: ['Auto-Claim: Heavy Rain', 'Auto-Claim: Heatwave', 'Standard Support']
-  },
-  {
-    id: 'standard',
-    name: 'Smart Partner',
-    icon: <Zap size={20} />,
-    color: 'var(--accent-400)',
-    multiplier: 1.0,
-    coverage: 0.75,
-    recommended: true,
-    features: ['Everything in Basic', 'Auto-Claim: Flooding', 'Auto-Claim: AQI > 400', 'Priority Support']
-  },
-  {
-    id: 'prime',
-    name: 'Total Resilience',
-    icon: <Heart size={20} />,
-    color: 'var(--warning-400)',
-    multiplier: 1.3,
-    coverage: 1.0,
-    features: ['Everything in Smart', 'Auto-Claim: Traffic > 4hrs', 'Free Health Consultation', 'Instant UPI Payout']
-  }
+const EXCLUSIONS = [
+  'War, Military Conflict & Invasion',
+  'Pandemic or Epidemic (Government Notified)',
+  'Nuclear, Chemical or Radioactive Events',
+  'Terrorism (Declared by Govt. Authority)',
+  'Self-Inflicted or Deliberate Disruptions',
 ];
 
 export default function Onboarding() {
-  const { registerWorker, createPolicy, calculatePremium, login, CITIES, PLATFORMS, DISRUPTION_TYPES } = useApp();
+  const {
+    registerWorker,
+    createPolicy,
+    calculatePremium,
+    login,
+    CITIES,
+    PLATFORMS,
+    detectLocation,
+    currentLocation,
+    fetchWeatherForCity,
+    getPackages
+  } = useApp();
   const navigate = useNavigate();
+
   const [step, setStep] = useState(0);
-  const [selectedPackage, setSelectedPackage] = useState(PACKAGES[1]);
   const [formData, setFormData] = useState({
+    username: '', password: '', confirmPassword: '',
     firstName: '', lastName: '', phone: '', email: '',
     city: '', platform: '', vehicleType: 'Motorcycle',
-    avgWeeklyEarning: 5000, avgDeliveriesPerDay: 40,
+    avgWeeklyEarning: 8000, avgDeliveriesPerDay: 25,
   });
-  const [premiumResult, setPremiumResult] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateField = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const [riskResult, setRiskResult] = useState(null);
+  const [availablePackages, setAvailablePackages] = useState([]);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
+  const [stepError, setStepError] = useState('');
+
+  // 1. Auto-detect location on mount
+  useEffect(() => {
+    const autoDetect = async () => {
+      const loc = await detectLocation();
+      if (loc && loc.cityId) {
+        setFormData(prev => ({ ...prev, city: loc.cityId }));
+      }
+    };
+    autoDetect();
+  }, [detectLocation]);
+
+  // Handle calculation & plan generation
+  const runRiskAnalysis = useCallback(async () => {
+    setIsScanning(true);
+    setStepError('');
+
+    try {
+      const cityObj = CITIES.find(c => c.id === formData.city);
+      const weather = await fetchWeatherForCity(cityObj);
+
+      // Calculate premium with the new advanced engine
+      const res = calculatePremium(formData);
+      setRiskResult(res);
+
+      // Get the 3 packages based on the risk calculation
+      const pkgs = getPackages(res.weeklyPremium, res.maxCoverage);
+      setAvailablePackages(pkgs);
+      setSelectedPackage(pkgs[1]); // Default to Smart Partner
+
+      setTimeout(() => {
+        setIsScanning(false);
+        setStep(4); // Move to coverage choice
+      }, 2000);
+    } catch (err) {
+      setStepError('Failed to analyze risk. Please check your connection.');
+      setIsScanning(false);
+    }
+  }, [formData, CITIES, calculatePremium, fetchWeatherForCity, getPackages]);
+
+  const handleNext = () => {
+    setStepError('');
+    if (step === 0) {
+      if (!formData.username || !formData.password) { setStepError('Username and password required'); return; }
+      if (formData.password !== formData.confirmPassword) { setStepError('Passwords do not match'); return; }
+    }
+    if (step === 1) {
+      if (!formData.firstName || !formData.phone) { setStepError('Basic info required'); return; }
+    }
+    if (step === 2) {
+      if (!formData.city || !formData.platform) { setStepError('Please select your city and platform'); return; }
+    }
+    setStep(s => s + 1);
   };
 
-  const handleCalculateRisk = () => {
-    const result = calculatePremium(formData);
-    setPremiumResult(result);
-  };
-
-  const handleSubmit = () => {
-    setIsSubmitting(true);
-    const cityObj = CITIES.find(c => c.id === formData.city);
-    const platformObj = PLATFORMS.find(p => p.id === formData.platform);
-
-    // Simulation delay
+  const handleActivate = () => {
+    setIsActivating(true);
     setTimeout(() => {
-      const worker = registerWorker({
-        ...formData,
-        email: formData.email || `worker_${Date.now()}@gigshield.com`,
-        city: cityObj,
-        platform: platformObj,
-        riskScore: premiumResult?.riskScore || 50,
-      });
+      const cityObj = CITIES.find(c => c.id === formData.city);
+      const platObj = PLATFORMS.find(p => p.id === formData.platform);
 
+      const worker = registerWorker({ ...formData, city: cityObj, platform: platObj });
       createPolicy({
         workerId: worker.id,
         workerName: `${formData.firstName} ${formData.lastName}`,
         city: cityObj.name,
-        platform: platformObj.name,
-        weeklyPremium: Math.round(premiumResult.weeklyPremium * selectedPackage.multiplier),
-        maxCoverage: Math.round(premiumResult.maxCoverage * selectedPackage.coverage),
-        riskScore: premiumResult.riskScore,
-        coveredDisruptions: selectedPackage.features, // Simplified for demo
-        autoRenew: true,
-        packageId: selectedPackage.id
+        platform: platObj.name,
+        packageId: selectedPackage.id,
+        packageName: selectedPackage.name,
+        weeklyPremium: selectedPackage.premium,
+        maxCoverage: selectedPackage.coverage,
+        coveredDisruptions: selectedPackage.included,
+        exclusions: EXCLUSIONS,
       });
 
-      // Log in automatically
-      login('worker', worker);
+      login('worker', { ...worker, isActive: true });
       navigate('/');
     }, 1500);
   };
 
-  const canProceed = () => {
-    switch (step) {
-      case 0: return formData.firstName && formData.lastName && formData.phone;
-      case 1: return formData.city && formData.platform && formData.avgWeeklyEarning > 0;
-      case 2: return premiumResult !== null;
-      case 3: return selectedPackage !== null;
-      default: return true;
-    }
-  };
+  if (!CITIES || !PLATFORMS) return <div className="page-container"><div className="loader" /></div>;
 
   return (
     <div className="page-container onboarding-page">
-      <div className="page-header animate-fade-in-up">
-        <h1 className="page-title">Secure Your Income</h1>
-        <p className="page-subtitle">Join 1M+ partners who protect their daily earnings with AI</p>
-      </div>
-
-      <div className="stepper animate-fade-in-up delay-1">
-        {STEPS.map((s, i) => (
-          <div key={i} className={`step ${i === step ? 'active' : i < step ? 'completed' : ''}`}>
-            <div className="step-number">
-              {i < step ? <CheckCircle size={16} /> : i + 1}
-            </div>
-            <span className="step-label">{s}</span>
-            {i < STEPS.length - 1 && <div className="step-line" />}
+      <div className="onboarding-layout">
+        {/* Left Side: Progress & Info */}
+        <aside className="onboarding-sidebar">
+          <div className="logo-group">
+            <Shield className="logo-icon-svg" />
+            <h2>GigCover</h2>
           </div>
-        ))}
-      </div>
 
-      <div className="onboarding-content animate-fade-in-up delay-2">
-        <div className="glass-card form-card">
-          {step === 0 && (
-            <div className="form-step">
-              <div className="step-header">
-                <UserPlus size={24} style={{ color: 'var(--primary-400)' }} />
-                <div>
-                  <h3>Personal Identity</h3>
-                  <p>Tell us who you are so we can verify your account</p>
+          <div className="stepper-vertical">
+            {STEPS.map((s, i) => (
+              <div key={i} className={`v-step ${i === step ? 'active' : i < step ? 'done' : ''}`}>
+                <div className="v-step-marker">{i < step ? '✓' : i + 1}</div>
+                <div className="v-step-content">
+                  <span className="v-step-title">{s}</span>
                 </div>
               </div>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>First Name</label>
-                  <input className="form-input" placeholder="e.g. Rajesh" value={formData.firstName} onChange={e => updateField('firstName', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Last Name</label>
-                  <input className="form-input" placeholder="e.g. Kumar" value={formData.lastName} onChange={e => updateField('lastName', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>WhatsApp Number</label>
-                  <input className="form-input" placeholder="+91 00000 00000" value={formData.phone} onChange={e => updateField('phone', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Email (for digital policy)</label>
-                  <input className="form-input" placeholder="ajay@example.com" value={formData.email} onChange={e => updateField('email', e.target.value)} />
-                </div>
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
 
-          {step === 1 && (
-            <div className="form-step">
-              <div className="step-header">
-                <Truck size={24} style={{ color: 'var(--accent-400)' }} />
-                <div>
-                  <h3>Platform & Earnings</h3>
-                  <p>We use this to calculate your parametric coverage needs</p>
-                </div>
-              </div>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Working City</label>
-                  <select className="form-select" value={formData.city} onChange={e => updateField('city', e.target.value)}>
-                    <option value="">Select city</option>
-                    {CITIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Deliver Platform</label>
-                  <select className="form-select" value={formData.platform} onChange={e => updateField('platform', e.target.value)}>
-                    <option value="">Choose platform</option>
-                    {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Avg. Weekly Earning (₹)</label>
-                  <input className="form-input" type="number" value={formData.avgWeeklyEarning} onChange={e => updateField('avgWeeklyEarning', parseInt(e.target.value) || 0)} />
-                </div>
-                <div className="form-group">
-                  <label>Vehicle Type</label>
-                  <select className="form-select" value={formData.vehicleType} onChange={e => updateField('vehicleType', e.target.value)}>
-                    <option value="Bicycle">Bicycle</option>
-                    <option value="E-bike">E-bike</option>
-                    <option value="Scooter">Scooter</option>
-                    <option value="Motorcycle">Motorcycle</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
+          <div className="security-badges" style={{ marginTop: 'auto', display: 'flex', gap: '1rem', color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><ShieldCheck size={12} /> Bank-level Security</span>
+          </div>
+        </aside>
 
-          {step === 2 && (
-            <div className="form-step">
-               <div className="step-header">
-                <Sparkles size={24} style={{ color: 'var(--warning-400)' }} />
-                <div>
-                  <h3>AI Risk Assessment</h3>
-                  <p>Our G5 model is analyzing your local risk profile...</p>
-                </div>
-              </div>
-
-              {!premiumResult ? (
-                <div className="risk-calculate-section">
-                  <div className="risk-factors glass-card">
-                    <h4>Real-time Data Points</h4>
-                    <div className="factor-list">
-                      <div className="factor-item"><MapPin size={16} /> Location: {CITIES.find(c=>c.id===formData.city)?.name} Risk Index</div>
-                      <div className="factor-item"><Truck size={16} /> Vehicle Factor: {formData.vehicleType}</div>
-                      <div className="factor-item"><Shield size={16} /> Current Monsoon Probability</div>
-                    </div>
+        {/* Right Side: Form Content */}
+        <main className="onboarding-main">
+          <div className="form-window glass-card">
+            {/* Step 0: Account */}
+            {step === 0 && (
+              <div className="form-section animate-fade-in">
+                <header>
+                  <h2>Create Account</h2>
+                  <p>Secure your protection dashboard</p>
+                </header>
+                <div className="form-grid">
+                  <div className="input-group">
+                    <label><User size={14} /> Username</label>
+                    <input value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} placeholder="e.g. rahul_delivery" />
                   </div>
-                  <button className="btn-primary calculate-btn" onClick={handleCalculateRisk}>
-                    <Sparkles size={16} /> Run GigShield G5 Risk Scan
-                  </button>
-                </div>
-              ) : (
-                <div className="risk-result animate-fade-in-up">
-                  <div className="risk-score-display">
-                    <div className="risk-score-circle" style={{
-                      '--score': premiumResult.riskScore,
-                      '--color': premiumResult.riskScore > 70 ? '#ef4444' : '#10b981'
-                    }}>
-                      <span className="risk-score-value">{premiumResult.riskScore}</span>
-                      <span className="risk-score-label">Risk Profile</span>
-                    </div>
-                    <div className="premium-details">
-                      <p>AI Scan Complete. You are eligible for an instant-payout protection plan in {formData.city}.</p>
-                    </div>
+                  <div className="input-group">
+                    <label><Lock size={14} /> Password</label>
+                    <input type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} placeholder="••••••••" />
+                  </div>
+                  <div className="input-group">
+                    <label>Confirm Password</label>
+                    <input type="password" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} placeholder="••••••••" />
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
 
-          {step === 3 && (
-            <div className="form-step">
-              <div className="step-header">
-                <ShieldCheck size={24} style={{ color: 'var(--accent-400)' }} />
-                <div>
-                  <h3>Select Your Policy</h3>
-                  <p>Choose the level of coverage that fits your budget</p>
+            {/* Step 1: Personal */}
+            {step === 1 && (
+              <div className="form-section animate-fade-in">
+                <header>
+                  <h2>Personal Profile</h2>
+                  <p>Tell us about yourself</p>
+                </header>
+                <div className="form-grid">
+                  <input value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} placeholder="First Name" />
+                  <input value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} placeholder="Last Name" />
+                  <input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="Phone Number" />
+                  <input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="Email Address" />
                 </div>
               </div>
-              
-              <div className="package-grid">
-                {PACKAGES.map(pkg => (
-                  <div 
-                    key={pkg.id} 
-                    className={`package-card glass-card ${selectedPackage?.id === pkg.id ? 'active' : ''} ${pkg.recommended ? 'recommended' : ''}`}
-                    onClick={() => setSelectedPackage(pkg)}
-                  >
-                    {pkg.recommended && <div className="recommended-badge">Recommended</div>}
-                    <div className="package-name" style={{ color: pkg.color }}>{pkg.name}</div>
-                    <div className="package-price">
-                       <span className="amount">₹{Math.round(premiumResult.weeklyPremium * pkg.multiplier)}</span>
-                       <span className="period">/week</span>
+            )}
+
+            {/* Step 2: Work Details */}
+            {step === 2 && (
+              <div className="form-section animate-fade-in">
+                <header>
+                  <h2>Work Details</h2>
+                  <p>Where and how do you work?</p>
+                </header>
+                <div className="form-grid">
+                  <div className="input-group">
+                    <label><MapPin size={14} /> Your City</label>
+                    <select value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })}>
+                      <option value="">Select City</option>
+                      {CITIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="input-group">
+                    <label><Truck size={14} /> Primary Platform</label>
+                    <select value={formData.platform} onChange={e => setFormData({ ...formData, platform: e.target.value })}>
+                      <option value="">Select Platform</option>
+                      {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="input-group">
+                    <label><DollarSign size={14} /> Weekly Earnings (Avg)</label>
+                    <input type="number" value={formData.avgWeeklyEarning} onChange={e => setFormData({ ...formData, avgWeeklyEarning: parseInt(e.target.value) })} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Risk Scan */}
+            {step === 3 && (
+              <div className="form-section risk-scan-section animate-fade-in">
+                <div className="scan-content">
+                  <div className={`scan-orb ${isScanning ? 'scanning' : ''}`}>
+                    <Sparkles size={40} />
+                  </div>
+                  <h2>AI Risk Assessment</h2>
+                  <p>We're scanning rainfall patterns, traffic congestion, and {formData.platform} server health in {CITIES.find(c => c.id === formData.city)?.name || currentLocation?.city || 'your area'}.</p>
+
+                  {currentLocation?.city && (
+                    <div className="loc-badge">
+                      <MapPin size={12} /> Detected: {currentLocation.city}, {currentLocation.state}
                     </div>
-                    <div className="package-features">
-                      {pkg.features.map((f, i) => (
-                        <div key={i} className="package-feature covered">
-                          <CheckCircle size={14} />
-                          <span>{f}</span>
+                  )}
+
+                  {!isScanning ? (
+                    <button className="scan-btn" onClick={runRiskAnalysis}>
+                      Start G5 AI Scan <ArrowRight size={18} />
+                    </button>
+                  ) : (
+                    <div className="scanning-steps">
+                      <span>Analyzing Seasonal Rain Data...</span>
+                      <div className="mini-progress"><div className="fill" /></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Coverage Selection */}
+            {step === 4 && (
+              <div className="form-section plan-selection animate-fade-in">
+                <header>
+                  <h2>Choose Your Protection</h2>
+                  <p>Personalized plans based on your Risk Score: <strong>{riskResult?.riskScore}</strong></p>
+                </header>
+
+                <div className="plans-horizontal">
+                  {availablePackages.map(pkg => (
+                    <div
+                      key={pkg.id}
+                      className={`plan-option ${selectedPackage?.id === pkg.id ? 'selected' : ''} ${pkg.recommended ? 'prime-bg' : ''}`}
+                      onClick={() => setSelectedPackage(pkg)}
+                    >
+                      {pkg.recommended && <div className="rec-tag">Recommended</div>}
+                      <h3>{pkg.name}</h3>
+                      <div className="price-tag">
+                        <span className="cur">₹</span>
+                        <span className="amt">{pkg.premium}</span>
+                        <span className="dur">/wk</span>
+                      </div>
+
+                      <div className="pkg-features">
+                        <div className="feat-list plus">
+                          <span>Included:</span>
+                          {pkg.included.map((f, i) => <div key={i} className="f-row"><CheckCircle size={10} /> {f}</div>)}
                         </div>
-                      ))}
+                        <div className="feat-list minus">
+                          <span>Excluded:</span>
+                          {pkg.excluded.map((f, i) => <div key={i} className="f-row"><XCircle size={10} /> {f}</div>)}
+                        </div>
+                      </div>
+
+                      <div className="pkg-coverage">
+                        Coverage: <strong>₹{pkg.coverage.toLocaleString()}</strong>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {step === 4 && (
-            <div className="form-step">
-              <div className="step-header">
-                <ShieldCheck size={24} style={{ color: 'var(--accent-400)' }} />
-                <div>
-                  <h3>Review Your Plan</h3>
-                  <p>Read the parametric triggers and confirm protection</p>
-                </div>
-              </div>
-              <div className="review-section">
-                <div className="review-card glass-card">
-                  <h4>Protection Summary</h4>
-                  <div className="review-grid">
-                    <div className="review-item"><span>Partner</span><strong>{formData.firstName} {formData.lastName}</strong></div>
-                    <div className="review-item"><span>City</span><strong>{formData.city}</strong></div>
-                    <div className="review-item"><span>Plan</span><strong>{selectedPackage.name}</strong></div>
-                    <div className="review-item"><span>Coverage</span><strong className="text-accent">₹{Math.round(premiumResult.maxCoverage * selectedPackage.coverage).toLocaleString()} /week</strong></div>
-                    <div className="review-item"><span>Weekly Premium</span><strong className="text-accent">₹{Math.round(premiumResult.weeklyPremium * selectedPackage.multiplier)}</strong></div>
+            {/* Step 5: Activation */}
+            {step === 5 && (
+              <div className="form-section activation-summary animate-fade-in">
+                <header>
+                  <h2>Review & Activate</h2>
+                  <p>Almost there, {formData.firstName}!</p>
+                </header>
+
+                <div className="summary-box">
+                  <div className="summary-row">
+                    <span>Plan selected</span>
+                    <strong>{selectedPackage?.name}</strong>
+                  </div>
+                  <div className="summary-row">
+                    <span>Weekly Premium</span>
+                    <strong className="text-accent">₹{selectedPackage?.premium}</strong>
+                  </div>
+                  <div className="summary-row">
+                    <span>Max Payout</span>
+                    <strong>₹{selectedPackage?.coverage.toLocaleString()}</strong>
+                  </div>
+                  <hr />
+                  <div className="exclusions-list">
+                    <p><Info size={12} /> Standard insurance exclusions apply: {EXCLUSIONS.join(', ')}.</p>
                   </div>
                 </div>
-                <div className="alert-banner-info">
-                   <Zap size={16} />
-                   <span>Parametric Trigger: Payouts are instant when weather/platform criteria are met. No claim forms required.</span>
+
+                <div className="terms-agreement">
+                  <input type="checkbox" id="terms" defaultChecked />
+                  <label htmlFor="terms">I agree to the parametric trigger conditions and auto-renewal terms.</label>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="form-nav">
-             {step > 0 && (
-               <button className="btn-secondary" onClick={() => setStep(s => s - 1)}>
-                 <ArrowLeft size={16} /> Back
-               </button>
-             )}
-             <div style={{ flex: 1 }} />
-             {step < 4 ? (
-               <button className="btn-primary" onClick={() => setStep(s => s + 1)} disabled={!canProceed()}>
-                 Next <ArrowRight size={16} />
-               </button>
-             ) : (
-               <button className="btn-accent" onClick={handleSubmit} disabled={isSubmitting}>
-                 {isSubmitting ? <div className="loader" /> : (
-                   <>
-                     <Lock size={16} /> Activate Protection Now
-                   </>
-                 )}
-               </button>
-             )}
+            {stepError && <div className="step-err-msg">⚠️ {stepError}</div>}
+
+            <footer className="form-footer-nav">
+              {step > 0 && step !== 3 && step !== 4 && (
+                <button className="nav-back" onClick={() => setStep(step - 1)}>
+                  <ArrowLeft size={18} /> Back
+                </button>
+              )}
+
+              {step < 5 && step !== 3 && step !== 4 && (
+                <button className="nav-next" onClick={handleNext}>
+                  Next <ArrowRight size={18} />
+                </button>
+              )}
+
+              {step === 4 && (
+                <button className="nav-next prime" onClick={() => setStep(5)}>
+                  Review Policy <ArrowRight size={18} />
+                </button>
+              )}
+
+              {step === 5 && (
+                <button className="activate-btn" onClick={handleActivate} disabled={isActivating}>
+                  {isActivating ? 'Activating Protection...' : 'Confirm & Activate'}
+                  <Shield size={18} />
+                </button>
+              )}
+            </footer>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

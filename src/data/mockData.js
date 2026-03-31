@@ -1,5 +1,5 @@
 // ============================================
-// GigShield - Mock Data & Simulation Engine
+// GigCover - Mock Data & Simulation Engine
 // ============================================
 
 // City-level risk profiles
@@ -366,40 +366,115 @@ export const generateLiveAlerts = () => [
   },
 ];
 
-// Premium calculation engine (AI simulation)
+// Plan feature sets
+export const PLAN_FEATURES = {
+  basic: {
+    name: 'Essential Guard',
+    included: ['Heavy Rain (>50mm)', 'Heat (>45°C)', 'AQI >400', '48hr Support'],
+    excluded: ['Flooding', 'Platform Outage', 'Accidents'],
+  },
+  standard: {
+    name: 'Smart Partner',
+    included: ['Everything in Basic', 'Flooding (>30cm)', 'Platform Outage', '12hr Support'],
+    excluded: ['Cyclones', 'Theft', 'Vehicle Damage'],
+  },
+  prime: {
+    name: 'Total Resilience',
+    included: ['Everything in Smart', 'Cyclone (>90km/h)', 'Instant Payout', '2hr Support'],
+    excluded: ['War', 'Pandemics', 'Terrorism', 'Nuclear'],
+  }
+};
+
+// Premium calculation engine (AI-driven simulation)
 export const calculatePremium = (workerData) => {
   const { city, platform, avgWeeklyEarning, vehicleType, avgDeliveriesPerDay } = workerData;
 
   const cityObj = CITIES.find(c => c.id === city) || CITIES[0];
-  const basePremium = avgWeeklyEarning * 0.025;
+  const baseRate = 0.022; // 2.2% base
 
-  // Risk factors
+  // 1. Location & Environmental Risk
   const cityRisk = cityObj.riskMultiplier;
-  const vehicleRisk = { 'Bicycle': 1.2, 'E-bike': 1.1, 'Scooter': 1.0, 'Motorcycle': 0.95 }[vehicleType] || 1.0;
-  const volumeRisk = avgDeliveriesPerDay > 20 ? 1.15 : avgDeliveriesPerDay > 15 ? 1.05 : 1.0;
 
-  // Seasonal adjustment (mock monsoon risk)
+  // 2. Platform Reliability Risk
+  const platformRisk = { 'zepto': 1.1, 'blinkit': 1.05, 'swiggy': 1.0, 'amazon_flex': 0.95 }[platform] || 1.0;
+
+  // 3. Traffic & Congestion Risk (Simulated per city style)
+  const trafficRisk = (cityObj.id === 'bangalore' || cityObj.id === 'mumbai') ? 1.25 : 1.05;
+
+  // 4. Vehicle Hazard Factor
+  const vehicleFactor = { 'Bicycle': 1.3, 'E-bike': 1.15, 'Scooter': 1.0, 'Motorcycle': 0.95 }[vehicleType] || 1.0;
+
+  // 5. Volume Exposure
+  const exposureFactor = avgDeliveriesPerDay > 30 ? 1.2 : avgDeliveriesPerDay > 20 ? 1.1 : 1.0;
+
+  // 6. Seasonal/Month-based Risk
   const month = new Date().getMonth();
-  const seasonalRisk = (month >= 5 && month <= 8) ? 1.3 : 1.0;
+  // Monsoon (June-Sept) = High Rain/Flood, Winter (Nov-Jan) = Fog/AQI in North
+  let seasonalRisk = 1.0;
+  if (month >= 5 && month <= 8) seasonalRisk = 1.35; // Monsoon
+  if ((month >= 10 || month <= 0) && cityObj.state === 'Delhi') seasonalRisk = 1.30; // Winter Fog/AQI
 
-  const adjustedPremium = Math.round(basePremium * cityRisk * vehicleRisk * volumeRisk * seasonalRisk);
-  const maxCoverage = Math.round(avgWeeklyEarning * 0.75);
+  const totalMultiplier = cityRisk * platformRisk * trafficRisk * vehicleFactor * exposureFactor * seasonalRisk;
+  const rawWeeklyPremium = avgWeeklyEarning * baseRate * totalMultiplier;
+  const maxWeeklyCoverage = Math.round(avgWeeklyEarning * 0.80);
 
-  const riskScore = Math.round((cityRisk * 25 + vehicleRisk * 15 + volumeRisk * 10 + seasonalRisk * 10) * 10) / 10;
+  const riskScore = Math.min(100, Math.round((totalMultiplier / 2.5) * 100));
 
   return {
-    weeklyPremium: adjustedPremium,
-    maxCoverage,
-    riskScore: Math.min(riskScore, 100),
+    weeklyPremium: Math.round(rawWeeklyPremium),
+    maxCoverage: maxWeeklyCoverage,
+    riskScore,
     breakdown: {
-      basePremium: Math.round(basePremium),
-      cityAdjustment: `${((cityRisk - 1) * 100).toFixed(0)}%`,
-      vehicleAdjustment: `${((vehicleRisk - 1) * 100).toFixed(0)}%`,
-      volumeAdjustment: `${((volumeRisk - 1) * 100).toFixed(0)}%`,
-      seasonalAdjustment: `${((seasonalRisk - 1) * 100).toFixed(0)}%`,
-    },
-    coveredDisruptions: DISRUPTION_TYPES.filter(() => Math.random() > 0.2),
+      locationRisk: `${((cityRisk - 1) * 100).toFixed(0)}%`,
+      trafficCongestion: `${((trafficRisk - 1) * 100).toFixed(0)}%`,
+      platformOutage: `${((platformRisk - 1) * 100).toFixed(0)}%`,
+      seasonalRisk: `${((seasonalRisk - 1) * 100).toFixed(0)}%`,
+      vehicleHazard: `${((vehicleFactor - 1) * 100).toFixed(0)}%`,
+    }
   };
+};
+
+export const getPackages = (basePremium, maxCoverage) => {
+  return [
+    {
+      id: 'basic',
+      ...PLAN_FEATURES.basic,
+      premium: Math.round(basePremium * 0.8),
+      coverage: Math.round(maxCoverage * 0.6),
+      multiplier: 0.8,
+    },
+    {
+      id: 'standard',
+      ...PLAN_FEATURES.standard,
+      premium: basePremium,
+      coverage: maxCoverage,
+      multiplier: 1.0,
+      recommended: true,
+    },
+    {
+      id: 'prime',
+      ...PLAN_FEATURES.prime,
+      premium: Math.round(basePremium * 1.4),
+      coverage: Math.round(maxCoverage * 1.5),
+      multiplier: 1.4,
+    }
+  ];
+};
+
+export const getStatePlanDiscovery = (stateName = 'Maharashtra') => {
+  // Find a representative city in the selected state
+  const cityObj = CITIES.find(c => c.state === stateName) || CITIES[0];
+  
+  // Sample calculation for discovery panel using the location's real risk multiplier
+  const sampleData = { 
+    city: cityObj.id, 
+    platform: 'swiggy', 
+    avgWeeklyEarning: 10000, 
+    vehicleType: 'Motorcycle', 
+    avgDeliveriesPerDay: 20 
+  };
+  const calc = calculatePremium(sampleData);
+  return getPackages(calc.weeklyPremium, calc.maxCoverage);
 };
 
 // Initialize all mock data

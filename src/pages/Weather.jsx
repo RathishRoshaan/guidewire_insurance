@@ -19,7 +19,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function Weather() {
-  const { weatherData, CITIES, generateRiskAssessment } = useApp();
+  const { weatherData, weatherLoading, CITIES, generateRiskAssessment, fetchWeatherForCity } = useApp();
   const [selectedCity, setSelectedCity] = useState(CITIES[0]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -27,11 +27,16 @@ export default function Weather() {
     return generateRiskAssessment(selectedCity);
   }, [selectedCity, generateRiskAssessment]);
 
-  const handleRefresh = () => {
+  const handleCityChange = async (cityId) => {
+    const city = CITIES.find(c => c.id === cityId) || CITIES[0];
+    setSelectedCity(city);
+    await fetchWeatherForCity(city);
+  };
+
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 1000);
+    await fetchWeatherForCity(selectedCity);
+    setIsRefreshing(false);
   };
 
   const currentWeather = weatherData[weatherData.length - 1] || {};
@@ -57,13 +62,13 @@ export default function Weather() {
             <select
               className="form-select city-select"
               value={selectedCity.id}
-              onChange={e => setSelectedCity(CITIES.find(c => c.id === e.target.value) || CITIES[0])}
+              onChange={e => handleCityChange(e.target.value)}
               id="weather-city-select"
             >
-              {CITIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {CITIES.map(c => <option key={c.id} value={c.id}>{c.name}, {c.state}</option>)}
             </select>
-            <button className={`btn-secondary refresh-btn ${isRefreshing ? 'refreshing' : ''}`} onClick={handleRefresh}>
-              <RefreshCw size={16} /> Refresh
+            <button className={`btn-secondary refresh-btn ${isRefreshing || weatherLoading ? 'refreshing' : ''}`} onClick={handleRefresh} disabled={weatherLoading}>
+              <RefreshCw size={16} /> {weatherLoading ? 'Loading...' : 'Refresh'}
             </button>
           </div>
         </div>
@@ -75,7 +80,9 @@ export default function Weather() {
           <div className="weather-main-header">
             <MapPin size={16} />
             <span>{selectedCity.name}, {selectedCity.state}</span>
-            <span className="weather-timestamp">Updated just now</span>
+            <span className="weather-timestamp">
+              {weatherLoading ? '⏳ Fetching real data...' : '🟢 Live — Open-Meteo API'}
+            </span>
           </div>
           <div className="weather-main-content">
             <div className="temp-display">
@@ -254,12 +261,12 @@ export default function Weather() {
         </div>
         <div className="sources-grid">
           {[
-            { name: 'OpenWeatherMap', type: 'Weather', status: 'Connected', latency: '120ms' },
-            { name: 'AQICN', type: 'Air Quality', status: 'Connected', latency: '85ms' },
-            { name: 'Google Maps Traffic', type: 'Traffic', status: 'Connected', latency: '200ms' },
-            { name: 'Platform API', type: 'Platform Status', status: 'Mocked', latency: 'N/A' },
-            { name: 'IMD Weather Alerts', type: 'Severe Weather', status: 'Connected', latency: '150ms' },
-            { name: 'NDMA Alerts', type: 'Civic/Disaster', status: 'Connected', latency: '300ms' },
+            { name: 'Open-Meteo', type: 'Weather & Humidity', status: 'Connected', latency: 'Live' },
+            { name: 'Open-Meteo AQI', type: 'Air Quality Index', status: 'Connected', latency: 'Live' },
+            { name: 'OpenStreetMap Nominatim', type: 'Location Geocoding', status: 'Connected', latency: 'Live' },
+            { name: 'Gemini G5 AI', type: 'Risk Analysis', status: 'Connected', latency: 'Live' },
+            { name: 'Platform API', type: 'Platform Status', status: 'Simulated', latency: 'N/A' },
+            { name: 'NDMA Alerts', type: 'Civic/Disaster', status: 'Simulated', latency: 'N/A' },
           ].map((source, i) => (
             <div key={i} className="source-item">
               <div className="source-status">

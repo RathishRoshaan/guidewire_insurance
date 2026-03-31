@@ -48,7 +48,7 @@ export default function RiskAdvisor() {
   return (
     <>
       {/* Floating Toggle Button */}
-      <button 
+      <button
         className={`advisor-toggle ${isOpen ? 'active' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         title="AI Risk Advisor"
@@ -92,8 +92,8 @@ export default function RiskAdvisor() {
             <h4>Strategic Insights</h4>
             <div className="insights-list">
               {insights.map((insight, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className={`insight-card ${insight.type} ${activeInsight === idx ? 'active' : ''}`}
                   onClick={() => setActiveInsight(idx)}
                 >
@@ -137,7 +137,7 @@ export default function RiskAdvisor() {
         </div>
 
         <div className="advisor-footer">
-          <p>Powered by GigShield G5 Model</p>
+          <p>Powered by GigCover G5 Model</p>
         </div>
       </div>
     </>
