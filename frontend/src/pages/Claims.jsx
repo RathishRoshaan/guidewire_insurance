@@ -4,10 +4,12 @@ import { FileWarning, Search, CheckCircle, XCircle, AlertTriangle, ShieldCheck, 
 import './Claims.css';
 
 export default function Claims() {
-  const { data, processClaim, isAdmin, currentUser } = useApp();
+  const { data, processClaim, isAdmin, currentUser, verifyClaimWithBackend } = useApp();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedClaim, setSelectedClaim] = useState(null);
+  const [backendCheckResult, setBackendCheckResult] = useState(null);
+  const [checkingBackend, setCheckingBackend] = useState(false);
 
   if (!data) return <div className="page-container"><div className="skeleton" style={{ height: 400 }} /></div>;
 
@@ -195,9 +197,9 @@ export default function Claims() {
           <div className="modal-content glass-card animate-fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Claim Details — {selectedClaim.id}</h3>
-              <button className="modal-close" onClick={() => setSelectedClaim(null)}>×</button>
+              <button className="modal-close" onClick={() => { setSelectedClaim(null); setBackendCheckResult(null); }}>×</button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
               {/* Claim info */}
               <div className="claim-detail-section">
                 <h4>Claim Information</h4>
@@ -211,7 +213,6 @@ export default function Claims() {
                   <div className="detail-item"><span>Payout Method</span><strong>{selectedClaim.payoutMethod || 'UPI (Live)'}</strong></div>
                 </div>
               </div>
-
               {/* Trigger Data */}
               <div className="claim-detail-section">
                 <h4>⚡ Parametric Trigger Data</h4>
@@ -237,6 +238,49 @@ export default function Claims() {
                     <strong>{selectedClaim.triggerData.confidence}%</strong>
                   </div>
                 </div>
+              </div>
+
+              {/* Backend ML Comparison (New) */}
+              <div className="claim-detail-section">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <h4>🔬 Backend ML Comparison</h4>
+                  <button 
+                    className="btn-secondary btn-xs" 
+                    onClick={async () => {
+                      setCheckingBackend(true);
+                      const res = await verifyClaimWithBackend({
+                        rain: selectedClaim.triggerData.source === 'Rain Gauge' ? selectedClaim.triggerData.value : 0,
+                        aqi: selectedClaim.triggerData.source === 'AQI Sensor' ? selectedClaim.triggerData.value : 50,
+                        temp: selectedClaim.triggerData.source === 'Thermometer' ? selectedClaim.triggerData.value : 28
+                      });
+                      setBackendCheckResult(res);
+                      setCheckingBackend(false);
+                    }}
+                    disabled={checkingBackend}
+                  >
+                    {checkingBackend ? 'Validating...' : 'Validate Logic'}
+                  </button>
+                </div>
+                {backendCheckResult ? (
+                  <div className="glass-card" style={{ padding: '1rem', border: `1px solid ${backendCheckResult.status === 'approved' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      {backendCheckResult.status === 'approved' ? <CheckCircle size={16} color="#10b981" /> : <XCircle size={16} color="#ef4444" />}
+                      <strong style={{ textTransform: 'uppercase', color: backendCheckResult.status === 'approved' ? '#10b981' : '#ef4444' }}>
+                        {backendCheckResult.status}
+                      </strong>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', margin: 0 }}>{backendCheckResult.reason}</p>
+                    {backendCheckResult.trigger && (
+                      <div style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.7 }}>
+                        Trigger type: <strong>{backendCheckResult.trigger}</strong>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="glass-card" style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    Click "Validate Logic" to run server-side ML check
+                  </div>
+                )}
               </div>
 
               {/* Fraud Check */}

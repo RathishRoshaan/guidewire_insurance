@@ -1,16 +1,79 @@
-# React + Vite
+# GigShield - AI-Powered Parametric Insurance Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+GigShield is a full-stack parametric insurance platform designed for gig workers. It uses real-time weather and air quality data to automatically trigger insurance claims and provide risk assessments.
 
-Currently, two official plugins are available:
+## Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```text
+guidewire_insurance/
+├── frontend/           # React + Vite application
+│    ├── src/
+│    ├── public/
+│    └── package.json
+└── backend/            # Node.js + Express backend
+     ├── routes/        # API Endpoints (Risk & Claims)
+     ├── ml/            # Weighted Risk Model logic
+     ├── server.js      # Express server entry point
+     └── package.json
+```
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Full-Stack Architecture**: Clean separation between React frontend and Express backend.
+- **AI Risk Calculation**: Backend-powered risk score based on Rainfall, AQI, and Temperature.
+- **Automated Claims Trigger**: Server-side logic to approve/reject claims based on environmental thresholds.
+- **Real-Time Dashboards**: Interactive UI for workers and admins with backend integration.
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Backend Setup
+
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the server:
+   ```bash
+   node server.js
+   ```
+   The backend will run on `http://localhost:5000`.
+
+### Frontend Setup
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   The frontend will run on the default Vite port (usually `http://localhost:5173`).
+
+## Environment Variables
+
+Check `.env.example` in the root directory for required environment variables.
+
+- `PORT`: Backend server port (defaults to 5000).
+- `OPENWEATHER_API_KEY`: Key for weather data (optional, mock fallback exists).
+- `MONGO_URI`: MongoDB connection string (future persistence).
+
+## API Documentation
+
+### 1. Risk Calculation
+- **POST** `/calculate-risk`
+- **Input**: `{ rain, aqi, temp }`
+- **Logic**: `0.4*rain + 0.3*aqi + 0.3*temp`
+
+### 2. Claim Trigger
+- **POST** `/create-claim`
+- **Input**: `{ rain, aqi, temp }`
+- **Logic**: Approved if `rain > 50` OR `aqi > 200` OR `temp > 40`.

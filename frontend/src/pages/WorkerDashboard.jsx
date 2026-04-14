@@ -12,10 +12,12 @@ export default function WorkerDashboard() {
   const {
     data, currentUser, currentLocation, locationLoading,
     weatherData, generateRiskAssessment, weatherLoading,
-    updatePolicy, getPackages, PLAN_FEATURES, CITIES, PLATFORMS
+    updatePolicy, getPackages, PLAN_FEATURES, CITIES, PLATFORMS,
+    getBackendRisk
   } = useApp();
   const [activeTab, setActiveTab] = useState('overview');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [backendRisk, setBackendRisk] = useState(null);
 
   useEffect(() => {
     if (CITIES) window.CITIES = CITIES;
@@ -52,6 +54,17 @@ export default function WorkerDashboard() {
       });
     }
   }, [currentLocation, currentWeather, getAiRiskAnalysis]);
+
+  useEffect(() => {
+    if (currentWeather && currentWeather.rainfall !== undefined) {
+      getBackendRisk(currentWeather.rainfall, currentWeather.aqi || 50, currentWeather.temperature)
+        .then(res => {
+          if (res && res.risk_score !== undefined) {
+            setBackendRisk(res.risk_score);
+          }
+        });
+    }
+  }, [currentWeather, getBackendRisk]);
 
   // Handle plan change
   const handleUpgrade = (pkg) => {
@@ -263,6 +276,25 @@ export default function WorkerDashboard() {
             <div className="alert-banner-local">
               <AlertTriangle size={16} />
               <span>Heavy Rain Alert: Payouts will trigger if intensity &gt; 50mm/hr</span>
+            </div>
+            
+            {/* Backend ML Sync */}
+            <div className="backend-sync-indicator" style={{ marginTop: '1rem', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px border var(--border-light)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CloudRain size={14} className="text-accent" />
+                <span>Backend ML Sync</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {backendRisk !== null ? (
+                  <>
+                    <span style={{ color: 'var(--text-muted)' }}>Server Risk:</span>
+                    <strong className="text-accent">{backendRisk.toFixed(1)}</strong>
+                  </>
+                ) : (
+                  <span className="animate-pulse">Calculating server-side risk...</span>
+                )}
+                <div className={`status-dot ${backendRisk !== null ? 'online' : ''}`} style={{ width: 8, height: 8 }} />
+              </div>
             </div>
           </div>
 

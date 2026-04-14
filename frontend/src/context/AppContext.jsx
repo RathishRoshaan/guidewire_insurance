@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { initializeMockData, calculatePremium, generateRiskAssessment, CITIES, PLATFORMS, DISRUPTION_TYPES, getPackages, PLAN_FEATURES, getStatePlanDiscovery } from '../data/mockData';
+import * as backendApi from '../services/api';
 
 const AppContext = createContext();
 
@@ -422,6 +422,25 @@ Provide a concise 2-sentence risk summary and a risk score 0-100. Format: {score
     return null;
   }, []);
 
+  // ── Backend API Integrations ──
+  const getBackendRisk = useCallback(async (rain, aqi, temp) => {
+    try {
+      return await backendApi.calculateRisk({ rain, aqi, temp });
+    } catch (err) {
+      console.error('Backend Risk API failed:', err);
+      return null;
+    }
+  }, []);
+
+  const verifyClaimWithBackend = useCallback(async (claimData) => {
+    try {
+      return await backendApi.createClaim(claimData);
+    } catch (err) {
+      console.error('Backend Claim API failed:', err);
+      return null;
+    }
+  }, []);
+
   // ── Gemini AI State Pricing (Phase 4) ──
   const getAiStatePricing = useCallback(async (stateName) => {
     try {
@@ -529,6 +548,8 @@ Return ONLY valid JSON strictly in this structural format without any markdown b
     CITIES,
     PLATFORMS,
     DISRUPTION_TYPES,
+    getBackendRisk,
+    verifyClaimWithBackend
   };
 
   return (
