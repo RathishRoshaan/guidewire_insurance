@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { MapPin, Shield, Zap, Cloud, Wind, Thermometer, Droplets, ChevronDown, ArrowRight, Star, Check, X, Activity } from 'lucide-react';
+import { MapPin, Shield, Zap, Cloud, Wind, Thermometer, Droplets, ChevronDown, ArrowRight, Star, Check, X, Activity, IndianRupee } from 'lucide-react';
 import './LandingPage.css';
 
 const STATES = [
@@ -11,8 +11,9 @@ const STATES = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { detectLocation, currentLocation, weatherData, weatherLoading, locationLoading } = useApp();
+  const { detectLocation, currentLocation, weatherData, weatherLoading, locationLoading, getStatePlanDiscovery } = useApp();
   const [selectedState, setSelectedState] = useState('Maharashtra');
+  const [weeklyIncome, setWeeklyIncome] = useState(7000);
   const [packages, setPackages] = useState([]);
   const [riskData, setRiskData] = useState(null);
   const [loadingPacks, setLoadingPacks] = useState(false);
@@ -45,75 +46,35 @@ export default function LandingPage() {
 
   // Fetch packages for selected state
   useEffect(() => {
-    fetchStatePricing(selectedState);
-  }, [selectedState]);
+    fetchStatePricing(selectedState, weeklyIncome);
+  }, [selectedState, weeklyIncome]);
 
-  async function fetchStatePricing(state) {
+  async function fetchStatePricing(state, income) {
     setLoadingPacks(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/risk/state/${state}`);
-      if (res.ok) {
-        const data = await res.json();
-        setPackages(data.packages || []);
-        setRiskData(data);
-      } else {
-        // Fallback: generate locally
-        generateLocalPacks(state);
-      }
+      // NOTE: backend API might not support income parameter yet, using consistent ML fallback
+      generateLocalPacks(state, income);
     } catch {
-      generateLocalPacks(state);
+      generateLocalPacks(state, income);
     }
     setLoadingPacks(false);
   }
 
-  function generateLocalPacks(state) {
-    const income = 7000;
-    const stateMultipliers = {
-      'Kerala': 1.3, 'Maharashtra': 1.2, 'Delhi': 1.4, 'Rajasthan': 1.25,
-      'Tamil Nadu': 1.15, 'West Bengal': 1.2, 'Karnataka': 0.95,
-      'Telangana': 1.0, 'Gujarat': 1.1, 'Uttar Pradesh': 1.15,
-    };
-    const mult = stateMultipliers[state] || 1.0;
+  function generateLocalPacks(state, income) {
+    const pkgs = getStatePlanDiscovery(state, income);
+    
+    // Simulate risk data based on state name for the UI badge
     const riskLevels = { 'Delhi': 'High', 'Kerala': 'High', 'Rajasthan': 'Medium', 'Karnataka': 'Low' };
     const level = riskLevels[state] || 'Medium';
-    const riskAdj = level === 'High' ? 1.3 : level === 'Low' ? 0.8 : 1.0;
 
     setRiskData({
-      riskScore: Math.round(mult * 40 + 10),
+      riskScore: pkgs[1]?.multiplier ? Math.round((pkgs[1].multiplier / 1.5) * 100) : 50,
       riskLevel: level,
       stateLabel: state + ' Zone',
       riskFactors: [{ factor: `${state} Regional Risk`, severity: level.toLowerCase() }],
     });
 
-    setPackages([
-      {
-        id: 'basic', name: 'Essential Guard',
-        premium: Math.round(income * 0.025 * mult * riskAdj),
-        coverage: Math.round(income * 0.5), dailyCoverage: Math.round(income * 0.5 / 7),
-        riskLevel: level,
-        triggers: { rain: 'Rain > 50mm/hr', aqi: 'AQI > 400', temp: 'Temp > 45°C' },
-        inclusions: ['Heavy Rain (>50mm)', 'Extreme Heat (>45°C)', 'AQI >400', '48hr Support'],
-        exclusions: ['Flooding', 'Platform Outage', 'Cyclones'],
-      },
-      {
-        id: 'standard', name: 'Smart Partner', recommended: true,
-        premium: Math.round(income * 0.04 * mult * riskAdj),
-        coverage: Math.round(income * 0.75), dailyCoverage: Math.round(income * 0.75 / 7),
-        riskLevel: level,
-        triggers: { rain: 'Rain > 45mm/hr', aqi: 'AQI > 350', temp: 'Temp > 43°C' },
-        inclusions: ['Everything in Essential', 'Flooding (>30cm)', 'Platform Outage', '12hr Support'],
-        exclusions: ['Cyclones', 'Theft', 'Vehicle Damage'],
-      },
-      {
-        id: 'premium', name: 'Total Resilience',
-        premium: Math.round(income * 0.06 * mult * riskAdj),
-        coverage: Math.round(income * 1.0), dailyCoverage: Math.round(income / 7),
-        riskLevel: level,
-        triggers: { rain: 'Rain > 40mm/hr', aqi: 'AQI > 300', temp: 'Temp > 42°C' },
-        inclusions: ['Everything in Smart', 'Cyclone (>90km/h)', 'Curfew/Bandh', 'Instant Payout', '2hr Support'],
-        exclusions: ['War', 'Pandemics', 'Nuclear Events'],
-      },
-    ]);
+    setPackages(pkgs);
   }
 
   const riskBadgeClass = (level) => {
@@ -135,7 +96,7 @@ export default function LandingPage() {
         <nav className="landing-nav">
           <div className="nav-brand">
             <Shield size={28} />
-            <span>GigShield</span>
+            <span>GigCover</span>
           </div>
           <div className="nav-actions">
             <button className="btn-ghost" onClick={() => navigate('/login')}>Login</button>
@@ -205,12 +166,26 @@ export default function LandingPage() {
           <h2>Choose Your <span className="gradient-text">Protection Plan</span></h2>
           <p>Dynamic pricing powered by AI — adjusted for your state's real-time risk profile</p>
 
-          <div className="state-selector">
-            <MapPin size={16} />
-            <select value={selectedState} onChange={e => setSelectedState(e.target.value)}>
-              {STATES.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <ChevronDown size={16} className="select-arrow" />
+          <div className="state-selector" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div className="selector-group" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '0.2rem 1rem' }}>
+              <MapPin size={16} />
+              <select value={selectedState} onChange={e => setSelectedState(e.target.value)} style={{ background: 'transparent', border: 'none', color: '#fff', padding: '0.5rem', outline: 'none', appearance: 'none', paddingRight: '1rem' }}>
+                {STATES.map(s => <option key={s} value={s} style={{background: '#111'}}>{s}</option>)}
+              </select>
+              <ChevronDown size={16} className="select-arrow" style={{marginLeft: '-1rem', pointerEvents: 'none'}} />
+            </div>
+            
+            <div className="selector-group" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '0.2rem 1rem' }}>
+              <IndianRupee size={16} />
+              <input 
+                type="number" 
+                value={weeklyIncome} 
+                onChange={e => setWeeklyIncome(parseInt(e.target.value) || 0)}
+                style={{ background: 'transparent', border: 'none', color: '#fff', padding: '0.5rem', outline: 'none', width: '100px' }}
+                placeholder="Income"
+              />
+              <span style={{ fontSize: '0.8rem', color: '#aaa', marginLeft: '0.5rem' }}>/ week</span>
+            </div>
           </div>
 
           {riskData && (
@@ -295,7 +270,7 @@ export default function LandingPage() {
 
       {/* How It Works */}
       <section className="how-section">
-        <h2>How <span className="gradient-text">GigShield</span> Works</h2>
+        <h2>How <span className="gradient-text">GigCover</span> Works</h2>
         <div className="steps-grid">
           {[
             { icon: '📝', title: 'Register', desc: 'Sign up with your gig platform details and location' },
@@ -318,11 +293,11 @@ export default function LandingPage() {
         <div className="footer-inner">
           <div className="footer-brand">
             <Shield size={22} />
-            <span>GigShield</span>
+            <span>GigCover</span>
             <p>AI-Powered Parametric Insurance for India's Gig Workers</p>
           </div>
           <div className="footer-note">
-            © 2026 GigShield • Built for Guidewire Hackathon
+            © 2026 GigCover • Built for Guidewire Hackathon
           </div>
         </div>
       </footer>

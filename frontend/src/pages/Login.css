@@ -180,7 +180,7 @@
 
 /* ---- Right form panel ---- */
 .login-form-container {
-  flex: 0.9;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;

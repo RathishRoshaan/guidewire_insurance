@@ -1,5 +1,5 @@
 /**
- * GigShield — Parametric Auto-Trigger Service
+ * GigCover — Parametric Auto-Trigger Service
  * =============================================
  * Monitors weather conditions and automatically triggers claims
  * when parametric thresholds are breached.

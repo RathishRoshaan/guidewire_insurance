@@ -1,5 +1,5 @@
 /**
- * GigShield — AI/ML Parametric Risk Engine
+ * GigCover — AI/ML Parametric Risk Engine
  * ==========================================
  * Calculates risk scores, risk levels, risk factors, and generates
  * 3 dynamically-priced insurance packages based on:

@@ -12,9 +12,9 @@ const QUICK_REPLIES = [
   { icon: <Zap size={13} />, label: 'Auto Triggers', query: 'How do parametric auto-triggers work?' },
 ];
 
-const SYSTEM_PROMPT = `You are GigShield AI Assistant, a helpful chatbot for GigShield — India's AI-powered parametric insurance platform for gig delivery workers.
+const SYSTEM_PROMPT = `You are GigCover AI Assistant, a helpful chatbot for GigCover — India's AI-powered parametric insurance platform for gig delivery workers.
 
-Key facts about GigShield:
+Key facts about GigCover:
 - Protects gig workers (Swiggy, Zomato, Dunzo, etc.) from income loss due to weather disruptions
 - Uses parametric triggers: Rain >50mm, AQI >400, Temp >45°C automatically trigger claims
 - Three plans: Essential Guard (basic), Smart Partner (recommended), Total Resilience (premium)
@@ -36,7 +36,7 @@ export default function Chatbot() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: `Hi ${currentUser?.firstName || 'there'}! 👋 I'm your GigShield AI assistant. I can help with:\n\n• Policy coverage details\n• Filing claims\n• Weather risk analysis\n• Plan recommendations\n\nHow can I help you today?`,
+      content: `Hi ${currentUser?.firstName || 'there'}! 👋 I'm your GigCover AI assistant. I can help with:\n\n• Policy coverage details\n• Filing claims\n• Weather risk analysis\n• Plan recommendations\n\nHow can I help you today?`,
     },
   ]);
   const [input, setInput] = useState('');
@@ -76,7 +76,7 @@ Current Weather: Temp ${currentWeather.temperature?.toFixed(1) || '??'}°C, AQI 
           body: JSON.stringify({
             contents: [
               { role: 'user', parts: [{ text: SYSTEM_PROMPT + '\n\nContext:\n' + contextInfo }] },
-              { role: 'model', parts: [{ text: 'Understood. I am GigShield AI Assistant ready to help.' }] },
+              { role: 'model', parts: [{ text: 'Understood. I am GigCover AI Assistant ready to help.' }] },
               ...messages.slice(1).map(m => ({
                 role: m.role === 'assistant' ? 'model' : 'user',
                 parts: [{ text: m.content }],
@@ -115,7 +115,7 @@ Current Weather: Temp ${currentWeather.temperature?.toFixed(1) || '??'}°C, AQI 
       <button
         className={`chatbot-bubble ${isOpen ? 'bubble-hidden' : ''}`}
         onClick={() => setIsOpen(true)}
-        title="GigShield AI Assistant"
+        title="GigCover AI Assistant"
       >
         <MessageCircle size={24} />
         <span className="bubble-pulse" />
@@ -130,7 +130,7 @@ Current Weather: Temp ${currentWeather.temperature?.toFixed(1) || '??'}°C, AQI 
                 <Bot size={18} />
               </div>
               <div>
-                <h4>GigShield AI</h4>
+                <h4>GigCover AI</h4>
                 <span className="chatbot-status">
                   <Sparkles size={10} /> Powered by Gemini AI
                 </span>

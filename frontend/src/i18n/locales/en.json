@@ -15,7 +15,7 @@
     "get_covered": "Get Covered Now",
     "choose_plan": "Choose Your Protection Plan",
     "plan_subtitle": "Dynamic pricing powered by AI — adjusted for your state's real-time risk profile",
-    "how_it_works": "How GigShield Works"
+    "how_it_works": "How GigCover Works"
   },
   "plans": {
     "essential": "Essential Guard",
@@ -63,7 +63,7 @@
     "enter_txn": "Enter UPI Transaction ID",
     "verify": "Verify & Activate Policy",
     "success": "Policy Activated!",
-    "protected": "Your income is now protected by GigShield"
+    "protected": "Your income is now protected by GigCover"
   },
   "common": {
     "loading": "Loading...",

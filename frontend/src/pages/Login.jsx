@@ -14,22 +14,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // AI Discovery Panel state
-  const [discoveryState, setDiscoveryState] = useState('Maharashtra');
-  const [discoveryPlans, setDiscoveryPlans] = useState([]);
-  const [discoveryLoading, setDiscoveryLoading] = useState(true);
 
-  useEffect(() => {
-    let mounted = true;
-    setDiscoveryLoading(true);
-    getAiStatePricing(discoveryState).then(plans => {
-      if (mounted) {
-        setDiscoveryPlans(plans || []);
-        setDiscoveryLoading(false);
-      }
-    });
-    return () => { mounted = false; };
-  }, [discoveryState, getAiStatePricing]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -65,72 +50,7 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      {/* Left visual panel */}
-      <div className="login-visual">
-        <div className="visual-content">
-          <div className="logo-group">
-            <div className="logo-icon"><Shield size={32} /></div>
-            <h1>GigCover</h1>
-          </div>
 
-          <div className="discovery-header">
-            <h3>Explore Plans by State</h3>
-            <div className="state-selector-mini">
-              <MapPin size={14} />
-              <select value={discoveryState} onChange={(e) => setDiscoveryState(e.target.value)}>
-                {[...new Set(CITIES.map(c => c.state))].map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="discovery-plans-grid" style={{ position: 'relative', minHeight: '300px' }}>
-            {discoveryLoading && (
-              <div className="ai-loader-overlay">
-                <Sparkles size={32} className="pulse-icon" color="#f59e0b" />
-                <span>AI analyzing {discoveryState} risk metrics...</span>
-              </div>
-            )}
-            {!discoveryLoading && discoveryPlans.map(pkg => (
-              <div key={pkg.id} className={`discovery-card glass-card ${pkg.recommended ? 'recommended' : ''}`}>
-                <div className="d-card-header">
-                  <span className="p-name">{pkg.name}</span>
-                  <div className="p-price">
-                    <span className="amt">₹{pkg.premium}</span>
-                    <span className="per">/wk</span>
-                  </div>
-                </div>
-
-                <div className="p-features">
-                  <div className="f-section">
-                    <span className="f-title">Included:</span>
-                    {pkg.included.map((f, i) => (
-                      <div key={i} className="f-item" style={{ fontSize: '0.72rem' }}><CheckCircle size={10} color="var(--primary-400)" /> {f}</div>
-                    ))}
-                  </div>
-                  <div className="f-section">
-                    <span className="f-title">Excluded:</span>
-                    {pkg.excluded.map((f, i) => (
-                      <div key={i} className="f-item" style={{ fontSize: '0.72rem' }}><XCircle size={10} color="var(--error-400)" /> {f}</div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-coverage">
-                  Coverage: <strong>₹{pkg.coverage.toLocaleString()}</strong>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="discovery-note">
-            <Sparkles size={14} />
-            <span>AI scans local rainfall, traffic, and platform health to set these rates daily.</span>
-          </div>
-        </div>
-        <div className="visual-overlay" />
-      </div>
 
       {/* Right form panel */}
       <div className="login-form-container">

@@ -42,6 +42,22 @@ export default function Claims() {
         <p className="page-subtitle">Review, approve, and track automated insurance claims</p>
       </div>
 
+      {!isAdmin && (
+        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+          <button 
+            className="btn-primary" 
+            onClick={() => {
+              const reason = window.prompt("Enter reason for manual claim request:");
+              if(reason) {
+                alert(`Manual claim for "${reason}" submitted for review. An AI agent will assess damages.`);
+              }
+            }}
+          >
+            + Request Manual Claim
+          </button>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="claims-stats-grid animate-fade-in-up delay-1">
         <div className="glass-card stat-card">

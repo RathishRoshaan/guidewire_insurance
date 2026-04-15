@@ -31,7 +31,7 @@ if (process.env.MONGODB_URI) {
 // Health check
 app.get('/', (req, res) => {
   res.json({
-    service: 'GigShield Backend',
+    service: 'GigCover Backend',
     status: 'running',
     version: '2.0.0',
     timestamp: new Date().toISOString(),
@@ -76,7 +76,7 @@ cron.schedule('*/2 * * * *', async () => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 GigShield Backend running on port ${PORT}`);
+  console.log(`\n🚀 GigCover Backend running on port ${PORT}`);
   console.log(`   📡 API: http://localhost:${PORT}`);
   console.log(`   🤖 Auto-trigger: every 2 minutes`);
   console.log(`   🔐 JWT Auth: enabled\n`);

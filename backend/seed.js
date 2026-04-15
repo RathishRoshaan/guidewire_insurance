@@ -1,5 +1,5 @@
 /**
- * GigShield — Seed Script
+ * GigCover — Seed Script
  * Seeds 10 workers, 10 policies, ~15 claims, and transactions into MongoDB
  */
 require('dotenv').config();

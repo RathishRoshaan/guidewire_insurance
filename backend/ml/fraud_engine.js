@@ -1,5 +1,5 @@
 /**
- * GigShield — Fraud Detection Engine
+ * GigCover — Fraud Detection Engine
  * ====================================
  * Rule-based fraud scoring for insurance claims.
  * 

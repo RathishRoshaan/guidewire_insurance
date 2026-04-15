@@ -1,7 +1,7 @@
 {
-  "name": "gigshield-backend",
+  "name": "gigcover-backend",
   "version": "1.0.0",
-  "description": "Backend for GigShield Parametric Insurance",
+  "description": "Backend for GigCover Parametric Insurance",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

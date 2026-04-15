@@ -18,8 +18,8 @@ export default function Payment() {
   // Get pack data from navigation state
   const selectedPack = location.state?.selectedPack || null;
   const riskData = location.state?.riskData || {};
-  const upiId = 'gigshield@upi';
-  const upiUrl = `upi://pay?pa=${upiId}&pn=GigShield%20Insurance&am=${selectedPack?.premium || 0}&cu=INR&tn=GigShield%20Weekly%20Premium`;
+  const upiId = 'gigcover@upi';
+  const upiUrl = `upi://pay?pa=${upiId}&pn=GigCover%20Insurance&am=${selectedPack?.premium || 0}&cu=INR&tn=GigCover%20Weekly%20Premium`;
 
   useEffect(() => {
     if (!selectedPack && !success) {
@@ -107,7 +107,7 @@ export default function Payment() {
           </div>
 
           <h2>Policy Activated! 🎉</h2>
-          <p className="success-subtitle">Your income is now protected by GigShield</p>
+          <p className="success-subtitle">Your income is now protected by GigCover</p>
 
           <div className="policy-confirmation-card">
             <div className="pc-row">

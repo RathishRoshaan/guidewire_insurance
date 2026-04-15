@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import {
-  UserPlus, MapPin, Truck, DollarSign, Shield,
+  UserPlus, MapPin, Truck, IndianRupee, Shield,
   CheckCircle, ArrowRight, ArrowLeft, Sparkles,
   ShieldCheck, Zap, Heart, Lock, User, XCircle, Eye, EyeOff, Info
 } from 'lucide-react';
@@ -221,7 +221,7 @@ export default function Onboarding() {
                     </select>
                   </div>
                   <div className="input-group">
-                    <label><DollarSign size={14} /> Weekly Earnings (Avg)</label>
+                    <label><IndianRupee size={14} /> Weekly Earnings (Avg)</label>
                     <input type="number" value={formData.avgWeeklyEarning} onChange={e => setFormData({ ...formData, avgWeeklyEarning: parseInt(e.target.value) })} />
                   </div>
                 </div>

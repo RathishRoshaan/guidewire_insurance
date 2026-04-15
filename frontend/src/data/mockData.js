@@ -461,7 +461,7 @@ export const getPackages = (basePremium, maxCoverage) => {
   ];
 };
 
-export const getStatePlanDiscovery = (stateName = 'Maharashtra') => {
+export const getStatePlanDiscovery = (stateName = 'Maharashtra', income = 7000) => {
   // Find a representative city in the selected state
   const cityObj = CITIES.find(c => c.state === stateName) || CITIES[0];
   
@@ -469,7 +469,7 @@ export const getStatePlanDiscovery = (stateName = 'Maharashtra') => {
   const sampleData = { 
     city: cityObj.id, 
     platform: 'swiggy', 
-    avgWeeklyEarning: 10000, 
+    avgWeeklyEarning: income, 
     vehicleType: 'Motorcycle', 
     avgDeliveriesPerDay: 20 
   };

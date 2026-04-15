@@ -17,7 +17,7 @@ export default function LanguageSwitcher() {
   const handleChange = (e) => {
     const lang = e.target.value;
     i18n.changeLanguage(lang);
-    localStorage.setItem('gigshield_lang', lang);
+    localStorage.setItem('gigcover_lang', lang);
   };
 
   return (

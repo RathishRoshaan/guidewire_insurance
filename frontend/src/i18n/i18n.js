@@ -17,7 +17,7 @@ i18n.use(initReactI18next).init({
     bn: { translation: bn },
     mr: { translation: mr },
   },
-  lng: localStorage.getItem('gigshield_lang') || 'en',
+  lng: localStorage.getItem('gigcover_lang') || 'en',
   fallbackLng: 'en',
   interpolation: { escapeValue: false },
 });
