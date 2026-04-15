@@ -1,0 +1,81 @@
+{
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "policies": "पॉलिसियाँ",
+    "claims": "दावे",
+    "triggers": "ट्रिगर",
+    "analytics": "विश्लेषण",
+    "weather": "मौसम",
+    "logout": "लॉग आउट"
+  },
+  "landing": {
+    "hero_title": "अपनी आय की रक्षा करें,",
+    "hero_highlight": "बारिश हो या धूप",
+    "hero_subtitle": "भारत का पहला AI-संचालित पैरामीट्रिक बीमा गिग वर्कर्स के लिए। स्वचालित दावा पहचान, तत्काल भुगतान — कोई कागजी कार्रवाई नहीं।",
+    "get_covered": "अभी सुरक्षित हों",
+    "choose_plan": "अपनी सुरक्षा योजना चुनें",
+    "plan_subtitle": "AI द्वारा संचालित डायनामिक प्राइसिंग — आपके राज्य की रीयल-टाइम जोखिम प्रोफ़ाइल के अनुसार",
+    "how_it_works": "GigShield कैसे काम करता है"
+  },
+  "plans": {
+    "essential": "एसेंशियल गार्ड",
+    "smart": "स्मार्ट पार्टनर",
+    "total": "टोटल रेजिलिएंस",
+    "per_week": "/सप्ताह",
+    "coverage": "कवरेज",
+    "daily": "दैनिक",
+    "triggers": "ऑटो-ट्रिगर थ्रेशोल्ड",
+    "inclusions": "शामिल",
+    "exclusions": "शामिल नहीं",
+    "recommended": "अनुशंसित",
+    "choose": "योजना चुनें",
+    "best_value": "शुरू करें — सर्वोत्तम मूल्य"
+  },
+  "dashboard": {
+    "earnings_protected": "सुरक्षित आय",
+    "active_coverage": "सक्रिय कवरेज",
+    "premium_due": "प्रीमियम बकाया",
+    "days_left": "दिन शेष",
+    "risk_score": "जोखिम स्कोर",
+    "recent_claims": "हाल के दावे",
+    "weather_now": "अभी मौसम",
+    "request_claim": "दावा अनुरोध"
+  },
+  "claims": {
+    "claim_id": "दावा आईडी",
+    "amount": "राशि",
+    "status": "स्थिति",
+    "type": "प्रकार",
+    "date": "तारीख",
+    "auto": "स्वचालित",
+    "manual": "मैनुअल",
+    "approved": "स्वीकृत",
+    "pending": "समीक्षा में",
+    "rejected": "अस्वीकृत",
+    "paid": "भुगतान किया",
+    "flagged": "चिह्नित"
+  },
+  "payment": {
+    "complete": "भुगतान पूरा करें",
+    "pay_upi": "UPI से भुगतान करें",
+    "scan_qr": "किसी भी UPI ऐप से स्कैन करें",
+    "upi_id": "UPI आईडी",
+    "enter_txn": "UPI ट्रांज़ैक्शन आईडी दर्ज करें",
+    "verify": "सत्यापित करें और पॉलिसी सक्रिय करें",
+    "success": "पॉलिसी सक्रिय!",
+    "protected": "आपकी आय अब GigShield द्वारा सुरक्षित है"
+  },
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "error": "कुछ गलत हो गया",
+    "submit": "जमा करें",
+    "cancel": "रद्द करें",
+    "confirm": "पुष्टि करें",
+    "back": "पीछे",
+    "next": "अगला",
+    "login": "लॉगिन",
+    "register": "रजिस्टर",
+    "admin": "एडमिन",
+    "worker": "वर्कर"
+  }
+}

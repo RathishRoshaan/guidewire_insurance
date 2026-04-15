@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { getWorkerDashboard } from '../services/api';
 import {
   ShieldCheck, AlertTriangle, TrendingUp, History,
   MapPin, CloudRain, Thermometer, Wind, Zap,
@@ -18,6 +19,18 @@ export default function WorkerDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [backendRisk, setBackendRisk] = useState(null);
+  
+  // Real live backend metrics
+  const [liveMetrics, setLiveMetrics] = useState(null);
+
+  useEffect(() => {
+    if (currentUser?.id) {
+        // Fetch new intelligent dashboard backend metrics
+        getWorkerDashboard(currentUser.id).then(res => {
+            if (res) setLiveMetrics(res);
+        });
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     if (CITIES) window.CITIES = CITIES;
@@ -31,10 +44,7 @@ export default function WorkerDashboard() {
     return policies.find(p => p.status === 'active') || policies.sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
   }, [data, currentUser]);
 
-  const userClaims = useMemo(() => {
-    if (!data?.claims || !currentUser) return [];
-    return data.claims.filter(c => c.workerId === currentUser.id).sort((a, b) => new Date(b.claimDate) - new Date(a.claimDate));
-  }, [data, currentUser]);
+  const userClaims = liveMetrics?.recentClaims || [];
 
   const [aiMessage, setAiMessage] = useState('Initializing AI analysis...');
   const { getAiRiskAnalysis } = useApp();
@@ -73,13 +83,7 @@ export default function WorkerDashboard() {
     setShowUpgradeModal(false);
   };
 
-  const daysRemaining = useMemo(() => {
-    if (!userPolicy?.endDate) return 0;
-    const end = new Date(userPolicy.endDate);
-    const now = new Date();
-    const diffTime = end - now;
-    return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-  }, [userPolicy]);
+  const daysRemaining = liveMetrics ? liveMetrics.renewalInDays : 0;
 
   const packages = useMemo(() => {
     if (!userPolicy) return [];
@@ -136,8 +140,8 @@ export default function WorkerDashboard() {
             <div className="glass-card mini-stat">
               <Package size={20} style={{ color: '#6366f1' }} />
               <div className="mini-stat-info">
-                <span>Total Coverage</span>
-                <strong>₹{userPolicy?.maxCoverage?.toLocaleString() || '0'}</strong>
+                <span>Protected Earnings</span>
+                <strong>₹{liveMetrics?.earningsProtected.toLocaleString() || '0'}</strong>
               </div>
             </div>
             <div className="glass-card mini-stat">
@@ -151,7 +155,7 @@ export default function WorkerDashboard() {
               <History size={20} style={{ color: '#10b981' }} />
               <div className="mini-stat-info">
                 <span>Total Payouts</span>
-                <strong>₹{currentUser?.totalPayouts?.toLocaleString() || '0'}</strong>
+                <strong>₹{liveMetrics?.totalPayouts.toLocaleString() || '0'}</strong>
               </div>
             </div>
           </div>

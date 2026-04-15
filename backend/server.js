@@ -1,22 +1,83 @@
 const express = require('express');
 const cors = require('cors');
+const cron = require('node-cron');
+require('dotenv').config();
+const mongoose = require('mongoose');
+
 const riskRoutes = require('./routes/risk');
 const claimRoutes = require('./routes/claim');
+const dashboardRoutes = require('./routes/dashboard');
+const authRoutes = require('./routes/auth');
+const workerRoutes = require('./routes/workers');
+const policyRoutes = require('./routes/policies');
+const triggerRoutes = require('./routes/triggers');
+const { checkAndTrigger } = require('./services/autoTrigger');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
-// Basic sanity check route
+// Connect to MongoDB
+if (process.env.MONGODB_URI) {
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('✅ Connected to MongoDB Atlas'))
+    .catch(err => console.error('❌ MongoDB connection error:', err.message));
+} else {
+  console.warn('⚠️ MONGODB_URI not set — running without database');
+}
+
+// Health check
 app.get('/', (req, res) => {
-  res.send('GigShield Backend Running');
+  res.json({
+    service: 'GigShield Backend',
+    status: 'running',
+    version: '2.0.0',
+    timestamp: new Date().toISOString(),
+    features: ['ML Risk Engine', 'Fraud Detection', 'Auto-Trigger', 'JWT Auth', 'UPI Payout'],
+  });
 });
 
-app.use('/calculate-risk', riskRoutes);
-app.use('/create-claim', claimRoutes);
+// ── API Routes ──
+// Auth (public)
+app.use('/api/auth', authRoutes);
+
+// Risk calculation (public — used by landing page)
+app.use('/api/risk', riskRoutes);
+app.use('/calculate-risk', riskRoutes); // Legacy compatibility
+
+// Claims
+app.use('/api/claims', claimRoutes);
+app.use('/create-claim', claimRoutes); // Legacy compatibility
+
+// Dashboard
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/dashboard', dashboardRoutes); // Legacy compatibility
+
+// Workers
+app.use('/api/workers', workerRoutes);
+
+// Policies
+app.use('/api/policies', policyRoutes);
+
+// Triggers
+app.use('/api/triggers', triggerRoutes);
+
+// ── Parametric Auto-Trigger Scheduler ──
+// Runs every 2 minutes for demo (would be hourly in production)
+cron.schedule('*/2 * * * *', async () => {
+  console.log('\n🔄 [CRON] Running parametric auto-trigger check...');
+  try {
+    await checkAndTrigger();
+  } catch (err) {
+    console.error('[CRON] Auto-trigger error:', err.message);
+  }
+});
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`\n🚀 GigShield Backend running on port ${PORT}`);
+  console.log(`   📡 API: http://localhost:${PORT}`);
+  console.log(`   🤖 Auto-trigger: every 2 minutes`);
+  console.log(`   🔐 JWT Auth: enabled\n`);
 });

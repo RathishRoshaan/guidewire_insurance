@@ -1,0 +1,81 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "policies": "Policies",
+    "claims": "Claims",
+    "triggers": "Triggers",
+    "analytics": "Analytics",
+    "weather": "Weather",
+    "logout": "Logout"
+  },
+  "landing": {
+    "hero_title": "Protect Your Income,",
+    "hero_highlight": "Rain or Shine",
+    "hero_subtitle": "India's first AI-powered parametric insurance for gig workers. Automatic claim detection, instant payouts — no paperwork, no delays.",
+    "get_covered": "Get Covered Now",
+    "choose_plan": "Choose Your Protection Plan",
+    "plan_subtitle": "Dynamic pricing powered by AI — adjusted for your state's real-time risk profile",
+    "how_it_works": "How GigShield Works"
+  },
+  "plans": {
+    "essential": "Essential Guard",
+    "smart": "Smart Partner",
+    "total": "Total Resilience",
+    "per_week": "/week",
+    "coverage": "Coverage",
+    "daily": "Daily",
+    "triggers": "Auto-Trigger Thresholds",
+    "inclusions": "Inclusions",
+    "exclusions": "Exclusions",
+    "recommended": "Recommended",
+    "choose": "Choose Plan",
+    "best_value": "Get Started — Best Value"
+  },
+  "dashboard": {
+    "earnings_protected": "Earnings Protected",
+    "active_coverage": "Active Coverage",
+    "premium_due": "Premium Due",
+    "days_left": "Days Left",
+    "risk_score": "Risk Score",
+    "recent_claims": "Recent Claims",
+    "weather_now": "Weather Now",
+    "request_claim": "Request Claim"
+  },
+  "claims": {
+    "claim_id": "Claim ID",
+    "amount": "Amount",
+    "status": "Status",
+    "type": "Type",
+    "date": "Date",
+    "auto": "Auto",
+    "manual": "Manual",
+    "approved": "Approved",
+    "pending": "Pending Review",
+    "rejected": "Rejected",
+    "paid": "Paid",
+    "flagged": "Flagged"
+  },
+  "payment": {
+    "complete": "Complete Payment",
+    "pay_upi": "Pay via UPI",
+    "scan_qr": "Scan with any UPI app",
+    "upi_id": "UPI ID",
+    "enter_txn": "Enter UPI Transaction ID",
+    "verify": "Verify & Activate Policy",
+    "success": "Policy Activated!",
+    "protected": "Your income is now protected by GigShield"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "login": "Login",
+    "register": "Register",
+    "admin": "Admin",
+    "worker": "Worker"
+  }
+}

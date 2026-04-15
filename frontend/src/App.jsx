@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { useState, useEffect } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import RiskAdvisor from './components/RiskAdvisor';
+import Chatbot from './components/Chatbot';
 import AdminDashboard from './pages/AdminDashboard';
 import WorkerDashboard from './pages/WorkerDashboard';
 import Onboarding from './pages/Onboarding';
@@ -12,6 +13,8 @@ import Triggers from './pages/Triggers';
 import Analytics from './pages/Analytics';
 import Weather from './pages/Weather';
 import Login from './pages/Login';
+import LandingPage from './pages/LandingPage';
+import Payment from './pages/Payment';
 import { CheckCircle, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 import './App.css';
 
@@ -41,6 +44,7 @@ function ToastContainer() {
 function AppContent() {
   const { isAdmin, isLoggedIn } = useApp();
   const [error, setError] = useState(null);
+  const location = useLocation();
 
   useEffect(() => {
     const handleError = (e) => {
@@ -61,13 +65,26 @@ function AppContent() {
     );
   }
 
+  // Public routes (no login required)
+  const isLandingPage = location.pathname === '/landing';
+  if (isLandingPage) {
+    return (
+      <>
+        <LandingPage />
+        <ToastContainer />
+      </>
+    );
+  }
+
   if (!isLoggedIn) {
     return (
       <div className="login-layout">
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="*" element={<Login />} />
+          <Route path="/payment" element={<Payment />} />
+          <Route path="*" element={<LandingPage />} />
         </Routes>
         <ToastContainer />
       </div>
@@ -86,9 +103,11 @@ function AppContent() {
           <Route path="/triggers" element={<Triggers />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/weather" element={<Weather />} />
+          <Route path="/payment" element={<Payment />} />
         </Routes>
       </main>
       {isAdmin && <RiskAdvisor />}
+      <Chatbot />
       <ToastContainer />
     </div>
   );

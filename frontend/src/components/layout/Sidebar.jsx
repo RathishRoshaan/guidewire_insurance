@@ -15,6 +15,7 @@ import {
   Umbrella,
 } from 'lucide-react';
 import { useState } from 'react';
+import LanguageSwitcher from '../LanguageSwitcher';
 import './Sidebar.css';
 
 const adminNav = [
@@ -85,6 +86,9 @@ export default function Sidebar() {
       {/* Footer */}
       {!collapsed && (
         <div className="sidebar-footer">
+          <div style={{ marginBottom: '1rem' }}>
+            <LanguageSwitcher />
+          </div>
           <div className="profile-section">
             <div className="avatar-mini">{isAdmin ? 'A' : (currentUser?.firstName?.[0] || 'U')}</div>
             <div className="profile-info">

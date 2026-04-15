@@ -1,0 +1,28 @@
+.language-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.language-switcher svg { color: #818cf8; flex-shrink: 0; }
+
+.language-switcher select {
+  background: transparent;
+  border: none;
+  color: #d1d5db;
+  font-size: 0.75rem;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  padding-right: 0.5rem;
+}
+
+.language-switcher select option {
+  background: #1a1a2e;
+  color: #fff;
+}

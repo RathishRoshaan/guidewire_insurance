@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { getAdminDashboard } from '../services/api';
 import {
   Users, Shield, FileWarning, DollarSign, AlertTriangle,
   TrendingUp, TrendingDown, Activity, Zap, ArrowRight,
@@ -26,6 +28,13 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function Dashboard() {
   const { data } = useApp();
+  const [liveAdminMetrics, setLiveAdminMetrics] = useState(null);
+
+  useEffect(() => {
+    getAdminDashboard().then(res => {
+        if (res) setLiveAdminMetrics(res);
+    });
+  }, []);
 
   if (!data) return <div className="page-container"><div className="skeleton" style={{ height: 400 }} /></div>;
 
@@ -33,15 +42,18 @@ export default function Dashboard() {
 
   const activeWorkers = workers.filter(w => w.isActive).length;
   const activePolicies = policies.filter(p => p.status === 'active').length;
-  const totalPremiums = policies.filter(p => p.status === 'active').reduce((s, p) => s + p.weeklyPremium, 0);
-  const totalPayouts = claims.filter(c => c.status === 'paid').reduce((s, c) => s + c.claimAmount, 0);
+  
+  // Try to use live metrics from database over mock data when available
+  const totalPremiums = liveAdminMetrics ? liveAdminMetrics.totalPremiums : policies.filter(p => p.status === 'active').reduce((s, p) => s + p.weeklyPremium, 0);
+  const totalPayouts = liveAdminMetrics ? liveAdminMetrics.totalPayouts : claims.filter(c => c.status === 'paid').reduce((s, c) => s + c.claimAmount, 0);
+  
   const pendingClaims = claims.filter(c => c.status === 'pending_review' || c.status === 'auto_approved').length;
   const flaggedClaims = claims.filter(c => c.status === 'flagged').length;
   const activeAlerts = alerts.filter(a => a.status === 'active');
 
   const stats = [
     { label: 'Active Workers', value: activeWorkers, icon: Users, color: 'var(--primary-400)', bg: 'rgba(20,184,166,0.12)', change: '+12%', positive: true },
-    { label: 'Active Policies', value: activePolicies, icon: Shield, color: 'var(--primary-400)', bg: 'rgba(20,184,166,0.12)', change: '+8%', positive: true },
+    { label: 'Loss Ratio (Live)', value: `${liveAdminMetrics ? liveAdminMetrics.lossRatio : '0'}%`, icon: Activity, color: 'var(--accent-400)', bg: 'rgba(245,158,11,0.12)', change: 'Target <30%', positive: true },
     { label: 'Weekly Premiums', value: `₹${(totalPremiums / 1000).toFixed(1)}K`, icon: DollarSign, color: 'var(--primary-400)', bg: 'rgba(20,184,166,0.12)', change: '+15%', positive: true },
     { label: 'Total Payouts', value: `₹${(totalPayouts / 1000).toFixed(1)}K`, icon: TrendingUp, color: 'var(--accent-400)', bg: 'rgba(245,158,11,0.12)', change: '-3%', positive: false },
   ];
