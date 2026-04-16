@@ -7,6 +7,7 @@ import {
   ShieldCheck, Zap, Heart, Lock, User, XCircle, Eye, EyeOff, Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import './Onboarding.css';
 
 const STEPS = ['Identity', 'Profile', 'Work', 'Risk Analysis', 'Coverage', 'Activation'];
@@ -24,14 +25,13 @@ export default function Onboarding() {
   const {
     registerWorker,
     createPolicy,
-    calculatePremium,
     login,
     CITIES,
     PLATFORMS,
     detectLocation,
     currentLocation,
     fetchWeatherForCity,
-    getPackages
+    getBackendRisk
   } = useApp();
   const navigate = useNavigate();
 
@@ -68,16 +68,21 @@ export default function Onboarding() {
 
     try {
       const cityObj = CITIES.find(c => c.id === formData.city);
-      const weather = await fetchWeatherForCity(cityObj);
+      const platObj = PLATFORMS.find(p => p.id === formData.platform);
+      
+      const payload = {
+        state: cityObj?.state || 'Maharashtra',
+        city: cityObj?.name || 'Mumbai',
+        weeklyIncome: formData.avgWeeklyEarning,
+        platform: platObj?.name || 'Swiggy'
+      };
 
-      // Calculate premium with the new advanced engine
-      const res = calculatePremium(formData);
-      setRiskResult(res);
+      const res = await getBackendRisk(payload);
+      if (!res) throw new Error('Risk API failed');
 
-      // Get the 3 packages based on the risk calculation
-      const pkgs = getPackages(res.weeklyPremium, res.maxCoverage);
-      setSelectedPackage(pkgs[1]); // Default to Smart Partner
-      setAvailablePackages(pkgs);
+      setRiskResult({ riskScore: res.riskScore });
+      setAvailablePackages(res.packages);
+      setSelectedPackage(res.packages[1]);
 
       setTimeout(() => {
         setIsScanning(false);
@@ -87,7 +92,8 @@ export default function Onboarding() {
       setStepError('Failed to analyze risk. Please check your connection.');
       setIsScanning(false);
     }
-  }, [formData, CITIES, calculatePremium, fetchWeatherForCity, getPackages]);
+  }, [formData, CITIES, PLATFORMS, getBackendRisk]);
+
 
   const handleNext = () => {
     setStepError('');
@@ -144,9 +150,12 @@ export default function Onboarding() {
       <div className="onboarding-layout">
         {/* Left Side: Progress & Info */}
         <aside className="onboarding-sidebar">
-          <div className="logo-group">
-            <Shield className="logo-icon-svg" />
-            <h2>GigCover</h2>
+          <div className="logo-group" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Shield className="logo-icon-svg" />
+              <h2>GigCover</h2>
+            </div>
+            <LanguageSwitcher />
           </div>
 
           <div className="stepper-vertical">

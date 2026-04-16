@@ -43,8 +43,8 @@ export async function calculateRisk(data) {
   }
 }
 
-export async function getStatePricing(stateName) {
-  const res = await fetch(`${API_BASE_URL}/api/risk/state/${encodeURIComponent(stateName)}`);
+export async function getStatePricing(stateName, income = 7000) {
+  const res = await fetch(`${API_BASE_URL}/api/risk/state/${encodeURIComponent(stateName)}?income=${income}`);
   if (!res.ok) throw new Error('Failed to get state pricing');
   return res.json();
 }

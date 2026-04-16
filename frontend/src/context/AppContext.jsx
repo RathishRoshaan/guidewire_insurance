@@ -154,6 +154,14 @@ export const AppProvider = ({ children }) => {
     );
   }, [addToast]);
 
+  // ── Fetch weather for a specific city (by coordinates) ──
+  const fetchWeatherForCity = useCallback(async (city) => {
+    setWeatherLoading(true);
+    const wData = await fetchRealWeather(city.lat, city.lng);
+    if (wData) setWeatherData(wData);
+    setWeatherLoading(false);
+  }, []);
+
   // ── Fetch Global Data ──
   const fetchGlobalData = useCallback(async () => {
     if (!isLoggedIn) return;
@@ -422,9 +430,9 @@ Provide a concise 2-sentence risk summary and a risk score 0-100. Format: {score
   }, []);
 
   // ── Backend API Integrations ──
-  const getBackendRisk = useCallback(async (rain, aqi, temp) => {
+  const getBackendRisk = useCallback(async (payload) => {
     try {
-      return await backendApi.calculateRisk({ rain, aqi, temp });
+      return await backendApi.calculateRisk(payload);
     } catch (err) {
       console.error('Backend Risk API failed:', err);
       return null;

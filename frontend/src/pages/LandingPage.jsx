@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import * as backendApi from '../services/api';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+
 import { MapPin, Shield, Zap, Cloud, Wind, Thermometer, Droplets, ChevronDown, ArrowRight, Star, Check, X, Activity, IndianRupee } from 'lucide-react';
 import './LandingPage.css';
 
@@ -24,7 +27,7 @@ export default function LandingPage() {
   // Auto-detect location on mount
   useEffect(() => {
     detectLocation();
-  }, []);
+  }, [detectLocation]);
 
   // When location is detected, set the state
   useEffect(() => {
@@ -54,7 +57,7 @@ export default function LandingPage() {
   async function fetchStatePricing(state, income) {
     setLoadingPacks(true);
     try {
-      const res = await backendApi.getStatePricing(state);
+      const res = await backendApi.getStatePricing(state, income);
       setRiskData({
         riskScore: res.riskScore,
         riskLevel: res.riskLevel,
@@ -92,8 +95,9 @@ export default function LandingPage() {
             <span>GigCover</span>
           </div>
           <div className="nav-actions">
-            <button className="btn-ghost" onClick={() => navigate('/login')}>Login</button>
-            <button className="btn-primary-sm" onClick={() => navigate('/onboarding')}>Get Started</button>
+            <LanguageSwitcher />
+            <button className="btn-ghost" onClick={() => navigate('/login')}>{t('common.login', 'Login')}</button>
+            <button className="btn-primary-sm" onClick={() => navigate('/onboarding')}>{t('common.register', 'Get Started')}</button>
           </div>
         </nav>
 
@@ -102,7 +106,7 @@ export default function LandingPage() {
             <Zap size={14} />
             {t('landing.hero_badge', 'AI-Powered Parametric Insurance')}
           </div>
-          <h1>{t('landing.hero_title_1', 'Protect Your Income,')}<br /><span className="gradient-text">{t('landing.hero_title_2', 'Rain or Shine')}</span></h1>
+          <h1>{t('landing.hero_title', 'Protect Your Income,')}<br /><span className="gradient-text">{t('landing.hero_highlight', 'Rain or Shine')}</span></h1>
           <p className="hero-subtitle">
             {t('landing.hero_subtitle', "India's first AI-powered parametric insurance for gig workers. Automatic claim detection, instant payouts — no paperwork, no delays.")}
           </p>
@@ -158,25 +162,37 @@ export default function LandingPage() {
           <h2>Choose Your <span className="gradient-text">Protection Plan</span></h2>
           <p>Dynamic pricing powered by AI — adjusted for your state's real-time risk profile</p>
 
-          <div className="state-selector" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <div className="selector-group" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '0.2rem 1rem' }}>
-              <MapPin size={16} />
-              <select value={selectedState} onChange={e => setSelectedState(e.target.value)} style={{ background: 'transparent', border: 'none', color: '#fff', padding: '0.5rem', outline: 'none', appearance: 'none', paddingRight: '1rem' }}>
-                {STATES.map(s => <option key={s} value={s} style={{background: '#111'}}>{s}</option>)}
-              </select>
-              <ChevronDown size={16} className="select-arrow" style={{marginLeft: '-1rem', pointerEvents: 'none'}} />
+          <div className="discovery-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', marginTop: '2.5rem' }}>
+            <div style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {t('landing.discovery_title', 'Explore Coverage for your Profile')}
             </div>
             
-            <div className="selector-group" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '0.2rem 1rem' }}>
-              <IndianRupee size={16} />
-              <input 
-                type="number" 
-                value={weeklyIncome} 
-                onChange={e => setWeeklyIncome(parseInt(e.target.value) || 0)}
-                style={{ background: 'transparent', border: 'none', color: '#fff', padding: '0.5rem', outline: 'none', width: '100px' }}
-                placeholder="Income"
-              />
-              <span style={{ fontSize: '0.8rem', color: '#aaa', marginLeft: '0.5rem' }}>/ week</span>
+            <div className="selectors-container" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <div className="selector-group" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.4rem 1.25rem' }}>
+                <MapPin size={18} style={{ color: '#6366f1' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '0.75rem' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>{t('landing.state', 'State')}</span>
+                  <select value={selectedState} onChange={e => setSelectedState(e.target.value)} style={{ background: 'transparent', border: 'none', color: '#fff', padding: '0.2rem 0', outline: 'none', fontSize: '1rem', fontWeight: '700' }}>
+                    {STATES.map(s => <option key={s} value={s} style={{background: '#111'}}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="selector-group" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.4rem 1.25rem' }}>
+                <IndianRupee size={18} style={{ color: '#34d399' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '0.75rem' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>{t('landing.income', 'Weekly Income')}</span>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <input 
+                      type="number" 
+                      value={weeklyIncome} 
+                      onChange={e => setWeeklyIncome(parseInt(e.target.value) || 0)}
+                      style={{ background: 'transparent', border: 'none', color: '#fff', padding: '0.2rem 0', outline: 'none', fontSize: '1rem', fontWeight: '700', width: '80px' }}
+                    />
+                    <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '0.25rem' }}>{t('landing.week', '/ wk')}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

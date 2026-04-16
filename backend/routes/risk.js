@@ -56,17 +56,18 @@ router.get('/state/:stateName', (req, res) => {
       return res.status(404).json({ error: `No risk profile for state: ${stateName}` });
     }
 
+    const income = parseInt(req.query.income) || 7000;
     const riskResult = calculateRiskScore({
       state: stateName,
       city: '',
-      weeklyIncome: 7000,
+      weeklyIncome: income,
       platform: 'Swiggy',
       weatherData: { rain: 0, aqi: 50, temp: 30, humidity: 60 },
     });
 
     const packages = generatePackages({
       state: stateName,
-      weeklyIncome: 7000,
+      weeklyIncome: income,
       riskScore: riskResult.riskScore,
       riskLevel: riskResult.riskLevel,
     });

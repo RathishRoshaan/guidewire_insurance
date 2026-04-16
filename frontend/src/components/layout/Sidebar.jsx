@@ -12,7 +12,7 @@ import {
   ChevronRight,
   LogOut,
   MapPin,
-  Umbrella,
+  Shield,
 } from 'lucide-react';
 import { useState } from 'react';
 import LanguageSwitcher from '../LanguageSwitcher';
@@ -47,7 +47,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="logo-icon">
-          <Umbrella size={collapsed ? 24 : 28} />
+          <Shield size={collapsed ? 24 : 28} />
         </div>
         {!collapsed && (
           <div className="logo-text">

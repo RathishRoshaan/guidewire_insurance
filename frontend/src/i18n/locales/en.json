@@ -15,7 +15,11 @@
     "get_covered": "Get Covered Now",
     "choose_plan": "Choose Your Protection Plan",
     "plan_subtitle": "Dynamic pricing powered by AI — adjusted for your state's real-time risk profile",
-    "how_it_works": "How GigCover Works"
+    "how_it_works": "How GigCover Works",
+    "discovery_title": "Explore Coverage for your Profile",
+    "state": "State",
+    "income": "Weekly Income",
+    "week": "/ wk"
   },
   "plans": {
     "essential": "Essential Guard",
