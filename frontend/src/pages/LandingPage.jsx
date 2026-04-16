@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { MapPin, Shield, Zap, Cloud, Wind, Thermometer, Droplets, ChevronDown, ArrowRight, Star, Check, X, Activity, IndianRupee } from 'lucide-react';
@@ -10,6 +11,7 @@ const STATES = [
 ];
 
 export default function LandingPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { detectLocation, currentLocation, weatherData, weatherLoading, locationLoading, getStatePlanDiscovery } = useApp();
   const [selectedState, setSelectedState] = useState('Maharashtra');
@@ -52,29 +54,20 @@ export default function LandingPage() {
   async function fetchStatePricing(state, income) {
     setLoadingPacks(true);
     try {
-      // NOTE: backend API might not support income parameter yet, using consistent ML fallback
-      generateLocalPacks(state, income);
-    } catch {
-      generateLocalPacks(state, income);
+      const res = await backendApi.getStatePricing(state);
+      setRiskData({
+        riskScore: res.riskScore,
+        riskLevel: res.riskLevel,
+        stateLabel: res.stateLabel || state + ' Zone',
+        riskFactors: res.riskFactors || [],
+      });
+      setPackages(res.packages);
+    } catch (err) {
+      console.error('Failed to fetch state pricing:', err);
+      // Minimal fallback
+      setRiskData({ riskScore: 50, riskLevel: 'Medium', stateLabel: state + ' Zone', riskFactors: [] });
     }
     setLoadingPacks(false);
-  }
-
-  function generateLocalPacks(state, income) {
-    const pkgs = getStatePlanDiscovery(state, income);
-    
-    // Simulate risk data based on state name for the UI badge
-    const riskLevels = { 'Delhi': 'High', 'Kerala': 'High', 'Rajasthan': 'Medium', 'Karnataka': 'Low' };
-    const level = riskLevels[state] || 'Medium';
-
-    setRiskData({
-      riskScore: pkgs[1]?.multiplier ? Math.round((pkgs[1].multiplier / 1.5) * 100) : 50,
-      riskLevel: level,
-      stateLabel: state + ' Zone',
-      riskFactors: [{ factor: `${state} Regional Risk`, severity: level.toLowerCase() }],
-    });
-
-    setPackages(pkgs);
   }
 
   const riskBadgeClass = (level) => {
@@ -107,17 +100,16 @@ export default function LandingPage() {
         <div className="hero-content">
           <div className="hero-badge">
             <Zap size={14} />
-            AI-Powered Parametric Insurance
+            {t('landing.hero_badge', 'AI-Powered Parametric Insurance')}
           </div>
-          <h1>Protect Your Income,<br /><span className="gradient-text">Rain or Shine</span></h1>
+          <h1>{t('landing.hero_title_1', 'Protect Your Income,')}<br /><span className="gradient-text">{t('landing.hero_title_2', 'Rain or Shine')}</span></h1>
           <p className="hero-subtitle">
-            India's first AI-powered parametric insurance for gig workers. 
-            Automatic claim detection, instant payouts — no paperwork, no delays.
+            {t('landing.hero_subtitle', "India's first AI-powered parametric insurance for gig workers. Automatic claim detection, instant payouts — no paperwork, no delays.")}
           </p>
           <div className="hero-cta">
             <button className="btn-hero" onClick={() => navigate('/onboarding')}>
               <Shield size={18} />
-              Get Covered Now
+              {t('landing.get_covered', 'Get Covered Now')}
               <ArrowRight size={18} />
             </button>
             <div className="hero-stats">
@@ -247,13 +239,13 @@ export default function LandingPage() {
               <div className="pack-features">
                 <h4>✅ Inclusions</h4>
                 <ul className="inclusions">
-                  {pkg.inclusions?.map((item, i) => (
+                  {(pkg.inclusions || pkg.included)?.map((item, i) => (
                     <li key={i}><Check size={14} className="icon-check" /> {item}</li>
                   ))}
                 </ul>
                 <h4>❌ Exclusions</h4>
                 <ul className="exclusions">
-                  {pkg.exclusions?.map((item, i) => (
+                  {(pkg.exclusions || pkg.excluded)?.map((item, i) => (
                     <li key={i}><X size={14} className="icon-x" /> {item}</li>
                   ))}
                 </ul>

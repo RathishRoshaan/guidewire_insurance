@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '../context/AppContext';
 import {
   UserPlus, MapPin, Truck, IndianRupee, Shield,
@@ -19,6 +20,7 @@ const EXCLUSIONS = [
 ];
 
 export default function Onboarding() {
+  const { t } = useTranslation();
   const {
     registerWorker,
     createPolicy,
@@ -74,8 +76,8 @@ export default function Onboarding() {
 
       // Get the 3 packages based on the risk calculation
       const pkgs = getPackages(res.weeklyPremium, res.maxCoverage);
-      setAvailablePackages(pkgs);
       setSelectedPackage(pkgs[1]); // Default to Smart Partner
+      setAvailablePackages(pkgs);
 
       setTimeout(() => {
         setIsScanning(false);
@@ -102,29 +104,37 @@ export default function Onboarding() {
     setStep(s => s + 1);
   };
 
-  const handleActivate = () => {
+  const handleActivate = async () => {
     setIsActivating(true);
-    setTimeout(() => {
+    try {
       const cityObj = CITIES.find(c => c.id === formData.city);
       const platObj = PLATFORMS.find(p => p.id === formData.platform);
 
-      const worker = registerWorker({ ...formData, city: cityObj, platform: platObj });
-      createPolicy({
-        workerId: worker.id,
-        workerName: `${formData.firstName} ${formData.lastName}`,
+      // 1. Register user in Backend
+      const regResult = await registerWorker({ ...formData, city: cityObj, platform: platObj });
+      
+      // 2. Create Policy in Backend
+      await createPolicy({
+        workerId: regResult.user.username,
+        workerName: regResult.user.fullName,
         city: cityObj.name,
         platform: platObj.name,
         packageId: selectedPackage.id,
         packageName: selectedPackage.name,
         weeklyPremium: selectedPackage.premium,
         maxCoverage: selectedPackage.coverage,
-        coveredDisruptions: selectedPackage.included,
-        exclusions: EXCLUSIONS,
+        coveredDisruptions: selectedPackage.inclusions || selectedPackage.included,
+        exclusions: selectedPackage.exclusions || selectedPackage.excluded,
       });
 
-      login('worker', { ...worker, isActive: true });
+      // 3. Log in with the new session
+      login('worker', regResult.user, regResult.token);
       navigate('/');
-    }, 1500);
+    } catch (err) {
+      setStepError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsActivating(false);
+    }
   };
 
   if (!CITIES || !PLATFORMS) return <div className="page-container"><div className="loader" /></div>;
@@ -162,8 +172,8 @@ export default function Onboarding() {
             {step === 0 && (
               <div className="form-section animate-fade-in">
                 <header>
-                  <h2>Create Account</h2>
-                  <p>Secure your protection dashboard</p>
+                  <h2>{t('common.get_started', 'Create Account')}</h2>
+                  <p>{t('onboarding.subtitle_1', 'Secure your protection dashboard')}</p>
                 </header>
                 <div className="form-grid">
                   <div className="input-group">
@@ -284,11 +294,11 @@ export default function Onboarding() {
                       <div className="pkg-features">
                         <div className="feat-list plus">
                           <span>Included:</span>
-                          {pkg.included.map((f, i) => <div key={i} className="f-row"><CheckCircle size={10} /> {f}</div>)}
+                          {(pkg.inclusions || pkg.included)?.map((f, i) => <div key={i} className="f-row"><CheckCircle size={10} /> {f}</div>)}
                         </div>
                         <div className="feat-list minus">
                           <span>Excluded:</span>
-                          {pkg.excluded.map((f, i) => <div key={i} className="f-row"><XCircle size={10} /> {f}</div>)}
+                          {(pkg.exclusions || pkg.excluded)?.map((f, i) => <div key={i} className="f-row"><XCircle size={10} /> {f}</div>)}
                         </div>
                       </div>
 

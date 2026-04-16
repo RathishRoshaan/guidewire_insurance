@@ -61,41 +61,30 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
-      // Build context
-      const currentWeather = weatherData?.[weatherData.length - 1] || {};
-      const contextInfo = `
-User: ${currentUser?.firstName || 'Guest'} ${currentUser?.lastName || ''}, ${currentUser?.platform || 'Gig worker'}
-Location: ${currentLocation?.name || currentUser?.city || 'Unknown'}, ${currentLocation?.state || currentUser?.state || ''}
-Current Weather: Temp ${currentWeather.temperature?.toFixed(1) || '??'}°C, AQI ${currentWeather.aqi || '??'}, Rain ${currentWeather.rainfall?.toFixed(1) || '0'}mm`;
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const history = messages.slice(1).map(m => ({
+        role: m.role === 'assistant' ? 'bot' : 'user',
+        content: m.content
+      }));
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [
-              { role: 'user', parts: [{ text: SYSTEM_PROMPT + '\n\nContext:\n' + contextInfo }] },
-              { role: 'model', parts: [{ text: 'Understood. I am GigCover AI Assistant ready to help.' }] },
-              ...messages.slice(1).map(m => ({
-                role: m.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: m.content }],
-              })),
-              { role: 'user', parts: [{ text: userMsg }] },
-            ],
-          }),
-        }
-      );
+      const res = await fetch(`${API_BASE_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMsg,
+          history: history
+        }),
+      });
 
-      const json = await res.json();
-      const reply = json?.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I couldn\'t process that. Please try again.';
+      const data = await res.json();
+      const reply = data.message || 'Sorry, I couldn\'t process that. Please try again.';
 
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (err) {
       console.error('Chatbot error:', err);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I\'m having trouble connecting right now. Please try again in a moment. 🔄',
+        content: 'Sorry, I\'m having trouble connecting to my service. Please try again later. 🔄',
       }]);
     }
 

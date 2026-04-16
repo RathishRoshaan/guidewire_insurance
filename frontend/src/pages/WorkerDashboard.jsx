@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '../context/AppContext';
 import { getWorkerDashboard } from '../services/api';
 import {
@@ -10,6 +11,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import './WorkerDashboard.css';
 
 export default function WorkerDashboard() {
+  const { t } = useTranslation();
   const {
     data, currentUser, currentLocation, locationLoading,
     weatherData, generateRiskAssessment, weatherLoading,
@@ -110,7 +112,7 @@ export default function WorkerDashboard() {
           <div className="user-profile">
             <div className="avatar">{currentUser.firstName?.[0]}{currentUser.lastName?.[0] || ''}</div>
             <div className="user-info">
-              <h1>Namaste, {currentUser.firstName} {currentUser.lastName}!</h1>
+              <h1>{t('dashboard.greeting', 'Namaste')}, {currentUser.fullName || currentUser.firstName}!</h1>
               <div className="location-tag">
                 <MapPin size={14} />
                 {locationLoading
@@ -140,21 +142,21 @@ export default function WorkerDashboard() {
             <div className="glass-card mini-stat">
               <Package size={20} style={{ color: '#6366f1' }} />
               <div className="mini-stat-info">
-                <span>Protected Earnings</span>
+                <span>{t('dashboard.earnings_protected', 'Protected Earnings')}</span>
                 <strong>₹{liveMetrics?.earningsProtected.toLocaleString() || '0'}</strong>
               </div>
             </div>
             <div className="glass-card mini-stat">
               <Package size={20} style={{ color: '#f59e0b' }} />
               <div className="mini-stat-info">
-                <span>Renewal In</span>
-                <strong className={daysRemaining < 2 ? 'text-danger' : 'text-accent'}>{daysRemaining} Days</strong>
+                <span>{t('dashboard.renewal_in', 'Renewal In')}</span>
+                <strong className={daysRemaining < 2 ? 'text-danger' : 'text-accent'}>{daysRemaining} {t('dashboard.days', 'Days')}</strong>
               </div>
             </div>
             <div className="glass-card mini-stat">
               <History size={20} style={{ color: '#10b981' }} />
               <div className="mini-stat-info">
-                <span>Total Payouts</span>
+                <span>{t('dashboard.total_payouts', 'Total Payouts')}</span>
                 <strong>₹{liveMetrics?.totalPayouts.toLocaleString() || '0'}</strong>
               </div>
             </div>
@@ -205,7 +207,7 @@ export default function WorkerDashboard() {
                   <div className="comp-row">
                     <span className="label">Included:</span>
                     <div className="tag-group">
-                      {userPolicy?.coveredDisruptions?.map((f, i) => (
+                      {(userPolicy?.inclusions || userPolicy?.included || userPolicy?.coveredDisruptions)?.map((f, i) => (
                         <span key={i} className="badge badge-info">{f}</span>
                       ))}
                     </div>
@@ -213,7 +215,7 @@ export default function WorkerDashboard() {
                   <div className="comp-row">
                     <span className="label">Excluded:</span>
                     <div className="tag-group opacity-50">
-                      {PLAN_FEATURES[userPolicy.packageId || 'standard']?.excluded?.map((f, i) => (
+                      {(userPolicy?.exclusions || userPolicy?.excluded || PLAN_FEATURES[userPolicy.packageId || 'standard']?.excluded || PLAN_FEATURES[userPolicy.packageId || 'standard']?.exclusions)?.map((f, i) => (
                         <span key={i} className="badge badge-danger">{f}</span>
                       ))}
                     </div>
@@ -239,6 +241,10 @@ export default function WorkerDashboard() {
                         <span className="u-price">₹{pkg.premium}/wk</span>
                       </div>
                       <div className="u-coverage">₹{pkg.coverage.toLocaleString()} coverage</div>
+                      <div className="u-details" style={{ fontSize: '0.7rem', marginTop: '0.5rem', opacity: 0.8 }}>
+                        <div style={{ color: 'var(--success-400)' }}>✓ {(pkg.inclusions || pkg.included)?.slice(0, 2).join(', ')}...</div>
+                        <div style={{ color: 'var(--text-muted)' }}>× {(pkg.exclusions || pkg.excluded)?.slice(0, 2).join(', ')}...</div>
+                      </div>
                     </div>
                   ))}
                 </div>

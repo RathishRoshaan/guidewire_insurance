@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 const claimSchema = new mongoose.Schema({
   claimId: { type: String, required: true, unique: true },
-  workerId: { type: String, required: true },
+  userId: { type: String }, // For new User model
+  workerId: { type: String }, // Legacy compatibility
   policyId: { type: String, required: true },
   disruptionType: { type: String, required: true },
   claimAmount: { type: Number, required: true },
@@ -11,6 +12,11 @@ const claimSchema = new mongoose.Schema({
   claimDate: { type: Date, default: Date.now },
   status: { type: String, enum: ['pending_review', 'auto_approved', 'paid', 'flagged', 'rejected'], default: 'pending_review' },
   isAutoTrigger: { type: Boolean, default: false },
+  
+  // Fraud detection outputs
+  fraudScore: { type: Number, default: 0 },
+  fraudFlags: { type: Array, default: [] },
+  
   triggerData: {
     lat: Number,
     lon: Number,

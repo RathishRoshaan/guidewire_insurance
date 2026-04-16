@@ -49,7 +49,7 @@ export default function Claims() {
             onClick={() => {
               const reason = window.prompt("Enter reason for manual claim request:");
               if(reason) {
-                alert(`Manual claim for "${reason}" submitted for review. An AI agent will assess damages.`);
+                submitManualClaim(reason);
               }
             }}
           >

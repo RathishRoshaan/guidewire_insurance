@@ -13,6 +13,8 @@ const policyRoutes = require('./routes/policies');
 const triggerRoutes = require('./routes/triggers');
 const { checkAndTrigger } = require('./services/autoTrigger');
 
+const connectDB = require('./config/db');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -20,13 +22,8 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 // Connect to MongoDB
-if (process.env.MONGODB_URI) {
-  mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ Connected to MongoDB Atlas'))
-    .catch(err => console.error('❌ MongoDB connection error:', err.message));
-} else {
-  console.warn('⚠️ MONGODB_URI not set — running without database');
-}
+connectDB();
+
 
 // Health check
 app.get('/', (req, res) => {
@@ -48,7 +45,7 @@ app.use('/api/risk', riskRoutes);
 app.use('/calculate-risk', riskRoutes); // Legacy compatibility
 
 // Claims
-app.use('/api/claims', claimRoutes);
+app.use('/api/claims', require('./routes/claims'));
 app.use('/create-claim', claimRoutes); // Legacy compatibility
 
 // Dashboard
@@ -59,10 +56,13 @@ app.use('/dashboard', dashboardRoutes); // Legacy compatibility
 app.use('/api/workers', workerRoutes);
 
 // Policies
-app.use('/api/policies', policyRoutes);
+app.use('/api/policies', require('./routes/policies'));
 
 // Triggers
 app.use('/api/triggers', triggerRoutes);
+
+// AI Chatbot
+app.use('/api/chat', require('./routes/chat'));
 
 // ── Parametric Auto-Trigger Scheduler ──
 // Runs every 2 minutes for demo (would be hourly in production)

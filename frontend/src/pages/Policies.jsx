@@ -183,11 +183,21 @@ export default function Policies() {
                 <div className="detail-item"><span>Start Date</span><strong>{selectedPolicy.startDate}</strong></div>
                 <div className="detail-item"><span>End Date</span><strong>{selectedPolicy.endDate}</strong></div>
                 <div className="detail-item"><span>Auto-Renew</span><strong>{selectedPolicy.autoRenew ? '✅ Yes' : '❌ No'}</strong></div>
-                {selectedPolicy.exclusions && (
+                {(selectedPolicy.inclusions || selectedPolicy.included || selectedPolicy.coveredDisruptions) && (
                   <div className="detail-item full-width" style={{ gridColumn: '1/-1', marginTop: '1rem' }}>
+                    <span style={{ color: 'var(--success-400)', fontWeight: '700', marginBottom: '0.5rem', display: 'block' }}>✅ Coverage Inclusions</span>
+                    <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      {(selectedPolicy.inclusions || selectedPolicy.included || selectedPolicy.coveredDisruptions).map((inc, i) => (
+                        <li key={i}>{inc}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {(selectedPolicy.exclusions || selectedPolicy.excluded) && (
+                  <div className="detail-item full-width" style={{ gridColumn: '1/-1', marginTop: '0.5rem' }}>
                     <span style={{ color: 'var(--danger-400)', fontWeight: '700', marginBottom: '0.5rem', display: 'block' }}>⚠️ Coverage Exclusions</span>
                     <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      {selectedPolicy.exclusions.map((ex, i) => (
+                      {(selectedPolicy.exclusions || selectedPolicy.excluded).map((ex, i) => (
                         <li key={i}>{ex}</li>
                       ))}
                     </ul>

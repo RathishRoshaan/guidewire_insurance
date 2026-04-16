@@ -5,53 +5,72 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const Worker = require('../models/Worker');
+const User = require('../models/User');
+const { calculateRiskScore, generatePackages } = require('../ml/risk_model');
+const { fetchWeatherData } = require('../utils/weather');
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { firstName, lastName, username, password, phone, email, idType, idNumber,
-            city, state, lat, lon, platform, weeklyIncome } = req.body;
+    const { fullName, username, password, platform, weeklyIncome, city, state } = req.body;
 
-    if (!firstName || !lastName || !username || !password) {
+    if (!fullName || !username || !password || !platform || !weeklyIncome || !city || !state) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Check if username exists
-    const existing = await Worker.findOne({ username: username.toLowerCase() }).catch(() => null);
+    const existing = await User.findOne({ username: username.toLowerCase() });
     if (existing) {
       return res.status(409).json({ error: 'Username already taken' });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
-    const workerId = 'WKR-' + String(Date.now()).slice(-6);
+    // 1. Fetch real weather data
+    const weatherData = await fetchWeatherData(city);
 
-    const worker = new Worker({
-      workerId,
-      firstName,
-      lastName,
-      username: username.toLowerCase(),
-      password: passwordHash,
-      phone: phone || '',
-      email: email || '',
-      idType: idType || 'Aadhaar',
-      idNumber: idNumber || '',
-      city: city || 'Mumbai',
-      state: state || 'Maharashtra',
-      operationZone: {
-        lat: lat || 19.076,
-        lon: lon || 72.8777,
-        radius_km: 50,
-      },
-      platform: platform || 'Swiggy',
-      weeklyIncome: weeklyIncome || 7000,
-      isActive: true,
+    // 2. Call ML Risk Engine
+    const { riskScore, riskLevel, riskFactors } = calculateRiskScore({
+      state,
+      city,
+      weeklyIncome,
+      platform,
+      weatherData
     });
 
-    await worker.save();
+    const packages = generatePackages({
+      state,
+      weeklyIncome,
+      riskScore,
+      riskLevel
+    });
+
+    const packs = {
+      basic: packages.find(p => p.id === 'basic'),
+      standard: packages.find(p => p.id === 'standard'),
+      premium: packages.find(p => p.id === 'premium')
+    };
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // 3. Store everything in MongoDB
+    const user = new User({
+      fullName,
+      username: username.toLowerCase(),
+      password: passwordHash,
+      platform,
+      weeklyIncome,
+      city,
+      state,
+      riskScore,
+      riskLevel,
+      riskFactors,
+      packs,
+      createdAt: new Date()
+    });
+
+    await user.save();
 
     const token = jwt.sign(
-      { id: worker.workerId, role: 'worker', username: worker.username },
+      { id: user._id, username: user.username, role: 'user' },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -59,19 +78,17 @@ router.post('/register', async (req, res) => {
     res.status(201).json({
       token,
       user: {
-        id: worker.workerId,
-        firstName: worker.firstName,
-        lastName: worker.lastName,
-        username: worker.username,
-        email: worker.email,
-        phone: worker.phone,
-        city: worker.city,
-        state: worker.state,
-        platform: worker.platform,
-        weeklyIncome: worker.weeklyIncome,
-        lat: worker.operationZone.lat,
-        lon: worker.operationZone.lon,
-      },
+        fullName: user.fullName,
+        username: user.username,
+        platform: user.platform,
+        weeklyIncome: user.weeklyIncome,
+        city: user.city,
+        state: user.state,
+        riskScore: user.riskScore,
+        riskLevel: user.riskLevel,
+        riskFactors: user.riskFactors,
+        packs: user.packs
+      }
     });
   } catch (err) {
     console.error('Register error:', err);
@@ -93,23 +110,23 @@ router.post('/login', async (req, res) => {
       );
       return res.json({
         token,
-        user: { id: 'ADMIN', firstName: 'Admin', lastName: 'User', username: 'admin', role: 'admin' },
+        user: { fullName: 'Admin User', username: 'admin', role: 'admin' },
         role: 'admin',
       });
     }
 
-    const worker = await Worker.findOne({ username: username.toLowerCase() }).catch(() => null);
-    if (!worker) {
+    const user = await User.findOne({ username: username.toLowerCase() });
+    if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const valid = await bcrypt.compare(password, worker.password);
+    const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const token = jwt.sign(
-      { id: worker.workerId, role: 'worker', username: worker.username },
+      { id: user._id, username: user.username, role: 'user' },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -117,20 +134,18 @@ router.post('/login', async (req, res) => {
     res.json({
       token,
       user: {
-        id: worker.workerId,
-        firstName: worker.firstName,
-        lastName: worker.lastName,
-        username: worker.username,
-        email: worker.email,
-        phone: worker.phone,
-        city: worker.city,
-        state: worker.state,
-        platform: worker.platform,
-        weeklyIncome: worker.weeklyIncome,
-        lat: worker.operationZone.lat,
-        lon: worker.operationZone.lon,
+        fullName: user.fullName,
+        username: user.username,
+        platform: user.platform,
+        weeklyIncome: user.weeklyIncome,
+        city: user.city,
+        state: user.state,
+        riskScore: user.riskScore,
+        riskLevel: user.riskLevel,
+        riskFactors: user.riskFactors,
+        packs: user.packs
       },
-      role: 'worker',
+      role: 'user',
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -138,4 +153,64 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// GET /api/auth/me
+router.get('/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'No token provided' });
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    if (decoded.role === 'admin') {
+      return res.json({ fullName: 'Admin User', username: 'admin', role: 'admin' });
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    res.json(user);
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+// GET /api/auth/me
+// ... (omitting current implementation for brevity in match)
+
+// POST /api/auth/update-location
+// Called by the frontend/app to update the user's current GPS location
+router.post('/update-location', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'No token provided' });
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    const { lat, lon } = req.body;
+    if (!lat || !lon) return res.status(400).json({ error: 'Missing lat/lon' });
+
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    user.lastLocation = {
+      lat,
+      lon,
+      updatedAt: new Date()
+    };
+
+    // Also update operationZone if not set
+    if (!user.operationZone || !user.operationZone.lat) {
+      user.operationZone = { lat, lon, radius_km: 50 };
+    }
+
+    await user.save();
+    res.json({ status: 'Location updated', location: user.lastLocation });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token or update failed' });
+  }
+});
+
 module.exports = router;
+

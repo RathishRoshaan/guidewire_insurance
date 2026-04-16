@@ -154,39 +154,54 @@ export const AppProvider = ({ children }) => {
     );
   }, [addToast]);
 
-  // ── Fetch weather for a specific city (by coordinates) ──
-  const fetchWeatherForCity = useCallback(async (city) => {
-    setWeatherLoading(true);
-    const wData = await fetchRealWeather(city.lat, city.lng);
-    if (wData) setWeatherData(wData);
-    setWeatherLoading(false);
-  }, []);
-
-  // ── Restore session ──
-  useEffect(() => {
+  // ── Fetch Global Data ──
+  const fetchGlobalData = useCallback(async () => {
+    if (!isLoggedIn) return;
     try {
-      const savedUser = localStorage.getItem('gigcover_user');
-      const savedAdmin = localStorage.getItem('gigcover_isAdmin');
-      if (savedAdmin === 'true') {
-        setCurrentUser({ firstName: 'Admin', lastName: 'User', username: 'admin', email: 'admin@gigcover.com' });
+      if (isAdmin) {
+        const claims = await backendApi.getAllClaims();
+        const workers = await backendApi.getAllWorkers();
+        setData(prev => ({ ...prev, claims, workers }));
+      } else if (currentUser) {
+        const username = currentUser.username || currentUser.id;
+        const claims = await backendApi.getWorkerClaims(username);
+        const policies = await backendApi.getWorkerPolicies(username);
+        setData(prev => ({ ...prev, claims, policies }));
+      }
+    } catch (err) {
+      console.error('Data fetch failed:', err);
+    }
+  }, [isLoggedIn, isAdmin, currentUser]);
+
+  useEffect(() => {
+    fetchGlobalData();
+  }, [fetchGlobalData]);
+
+  // ── Restore session from token ──
+  useEffect(() => {
+    const restoreSession = async () => {
+      const token = localStorage.getItem('gigcover_token');
+      if (!token) return;
+
+      try {
+        const user = await backendApi.getWorker('me'); // This assumes getWorker handles the 'me' token logic or similar
+        setCurrentUser(user);
         setIsLoggedIn(true);
-        setIsAdmin(true);
-      } else if (savedUser) {
-        const u = JSON.parse(savedUser);
-        setCurrentUser(u);
-        setIsLoggedIn(true);
-        setIsAdmin(false);
+        setIsAdmin(user.role === 'admin');
+        
         // Auto fetch weather for saved city
-        if (u.city?.lat) {
-          fetchRealWeather(u.city.lat, u.city.lng).then(wData => {
+        if (user.city) {
+          const cityObj = CITIES.find(c => c.name === user.city) || { lat: 19.07, lng: 72.87 };
+          fetchRealWeather(cityObj.lat, cityObj.lng).then(wData => {
             if (wData) setWeatherData(wData);
           });
         }
+      } catch (err) {
+        console.error('Session restoration failed:', err);
+        localStorage.removeItem('gigcover_token');
       }
-    } catch {
-      localStorage.removeItem('gigcover_user');
-      localStorage.removeItem('gigcover_isAdmin');
-    }
+    };
+    restoreSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -199,18 +214,13 @@ export const AppProvider = ({ children }) => {
   }, [isLoggedIn]);
 
   // ── Auth & Identity ──
-  const login = useCallback((role, userData = null, silent = false) => {
+  const login = useCallback((role, userData = null, token = null, silent = false) => {
     setIsLoggedIn(true);
     setIsAdmin(role === 'admin');
     if (userData) {
       setCurrentUser(userData);
-      localStorage.setItem('gigcover_isAdmin', 'false');
-      localStorage.setItem('gigcover_user', JSON.stringify(userData));
-      if (!silent) addToast(`Welcome back, ${userData.firstName}! 👋`, 'success');
-    } else {
-      localStorage.setItem('gigcover_isAdmin', 'true');
-      localStorage.removeItem('gigcover_user');
-      if (!silent) addToast('Welcome back, Admin! 🛡️', 'success');
+      if (token) localStorage.setItem('gigcover_token', token);
+      if (!silent) addToast(`Welcome back, ${userData.fullName || userData.firstName}! 👋`, 'success');
     }
   }, [addToast]);
 
@@ -221,83 +231,51 @@ export const AppProvider = ({ children }) => {
     setIsLoggedIn(false);
     setCurrentLocation(null);
     setWeatherData([]);
-    localStorage.removeItem('gigcover_user');
-    localStorage.removeItem('gigcover_isAdmin');
+    localStorage.removeItem('gigcover_token');
     addToast('Logged out successfully', 'info');
   }, [addToast]);
 
-  // ── Auth: validate login with stored credentials ──
-  const validateLogin = useCallback((username, password) => {
-    // Admin check
-    if (username === 'admin' && password === 'admin123') return { role: 'admin' };
-
-    // Worker check from localStorage registry
-    const registry = JSON.parse(localStorage.getItem('gigcover_registry') || '{}');
-    const stored = registry[username.toLowerCase()];
-    if (stored && stored.passwordHash === simpleHash(password)) {
-      return { role: 'worker', userData: stored.profile };
+  // ── Auth: validate login ──
+  const validateLogin = useCallback(async (username, password) => {
+    try {
+      const res = await backendApi.loginUser(username, password);
+      return res; // contains token, user, role
+    } catch (err) {
+      addToast(err.message, 'error');
+      return null;
     }
-    return null;
-  }, []);
+  }, [addToast]);
 
   // ── Auth: register new worker ──
-  const registerWorker = useCallback((workerData) => {
-    const newWorker = {
-      ...workerData,
-      id: `WKR-${String((data?.workers?.length || 0) + 1).padStart(4, '0')}`,
-      isActive: true,
-      totalClaims: 0,
-      totalPayouts: 0,
-      joinDate: new Date().toISOString().split('T')[0],
-    };
-    setData(prev => ({
-      ...prev,
-      workers: [...(prev?.workers || []), newWorker],
-    }));
-
-    // Save credentials to registry
-    const registry = JSON.parse(localStorage.getItem('gigcover_registry') || '{}');
-    registry[workerData.username.toLowerCase()] = {
-      passwordHash: simpleHash(workerData.password),
-      profile: {
-        id: newWorker.id,
-        firstName: workerData.firstName,
-        lastName: workerData.lastName,
+  const registerWorker = useCallback(async (workerData) => {
+    try {
+      const res = await backendApi.registerUser({
+        fullName: `${workerData.firstName} ${workerData.lastName}`,
         username: workerData.username,
-        phone: workerData.phone,
-        email: workerData.email,
-        city: workerData.city,
-        platform: workerData.platform,
-        vehicleType: workerData.vehicleType,
-        avgWeeklyEarning: workerData.avgWeeklyEarning,
-        avgDeliveriesPerDay: workerData.avgDeliveriesPerDay,
-        riskScore: workerData.riskScore || 50,
-        isActive: true,
-        totalClaims: 0,
-        totalPayouts: 0,
-        joinDate: newWorker.joinDate,
-      },
-    };
-    localStorage.setItem('gigcover_registry', JSON.stringify(registry));
-    addToast(`Welcome to GigCover, ${newWorker.firstName}! ✅`, 'success');
-    return newWorker;
-  }, [data, addToast]);
+        password: workerData.password,
+        platform: workerData.platform.name,
+        weeklyIncome: workerData.avgWeeklyEarning,
+        city: workerData.city.name,
+        state: workerData.city.state,
+      });
+      addToast(`Account created, ${workerData.firstName}! ✅`, 'success');
+      return res; // { token, user }
+    } catch (err) {
+      addToast(err.message, 'error');
+      throw err;
+    }
+  }, [addToast]);
 
-  // ── Policies & Claims ──
-  const createPolicy = useCallback((policyData, silent = false) => {
-    const newPolicy = {
-      ...policyData,
-      id: `POL-${Math.floor(Math.random() * 10000)}`,
-      status: 'active',
-      startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    };
-    setData(prev => ({
-      ...prev,
-      policies: [...(prev?.policies || []), newPolicy]
-    }));
-    if (!silent) addToast(`Policy ${newPolicy.packageName} activated!`, 'success');
-    return newPolicy;
+  // ── Policies ──
+  const createPolicy = useCallback(async (policyData, silent = false) => {
+    try {
+      const res = await backendApi.createPolicy(policyData);
+      if (!silent) addToast(`Policy ${res.packageName} activated!`, 'success');
+      return res;
+    } catch (err) {
+      console.error('Policy creation failed:', err);
+      return null;
+    }
   }, [addToast]);
 
   // ── Update existing policy (Upgrade/Change) ──
@@ -322,17 +300,37 @@ export const AppProvider = ({ children }) => {
   }, [addToast]);
 
   // ── Process claim ──
-  const processClaim = useCallback((claimId, action) => {
-    setData(prev => ({
-      ...prev,
-      claims: prev.claims.map(c =>
-        c.id === claimId
-          ? { ...c, status: action === 'approve' ? 'paid' : action === 'reject' ? 'rejected' : c.status, payoutDate: action === 'approve' ? new Date().toISOString().split('T')[0] : c.payoutDate }
-          : c
-      ),
-    }));
-    addToast(`Claim ${claimId} ${action === 'approve' ? 'approved & paid ✅' : 'rejected ❌'}`, action === 'approve' ? 'success' : 'warning');
-  }, [addToast]);
+  const processClaim = useCallback(async (claimId, action) => {
+    try {
+      await backendApi.processClaim(claimId, action);
+      addToast(`Claim ${claimId} ${action === 'approve' ? 'approved & paid ✅' : 'rejected ❌'}`, action === 'approve' ? 'success' : 'warning');
+      fetchGlobalData(); // Refetch to show updated status
+    } catch (err) {
+      addToast(`Failed to process claim: ${err.message}`, 'error');
+    }
+  }, [addToast, fetchGlobalData]);
+
+  // ── Manual claim creation ──
+  const submitManualClaim = useCallback(async (reason) => {
+    if (!currentUser) return;
+    try {
+      const claimData = {
+        workerId: currentUser.username || currentUser.id,
+        workerName: currentUser.fullName || `${currentUser.firstName} ${currentUser.lastName}`,
+        city: currentUser.city || 'Unknown',
+        platform: currentUser.platform || 'Unknown',
+        disruptionType: { id: 'manual', name: 'Manual Request', icon: '📝' },
+        lostHours: 8,
+        claimDate: new Date().toISOString().split('T')[0],
+        reason: reason
+      };
+      await backendApi.createClaim(claimData);
+      addToast('Manual claim submitted for admin review 📝', 'success');
+      fetchGlobalData();
+    } catch (err) {
+      addToast(`Failed to submit claim: ${err.message}`, 'error');
+    }
+  }, [currentUser, addToast, fetchGlobalData]);
 
   // ── Simulate disruption trigger ──
   const triggerDisruption = useCallback((cityId, disruptionId) => {
@@ -550,7 +548,8 @@ Return ONLY valid JSON strictly in this structural format without any markdown b
     PLATFORMS,
     DISRUPTION_TYPES,
     getBackendRisk,
-    verifyClaimWithBackend
+    verifyClaimWithBackend,
+    submitManualClaim
   };
 
   return (

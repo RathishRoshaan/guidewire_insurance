@@ -16,7 +16,7 @@ export default function Login() {
 
 
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (!username.trim() || !password.trim()) {
@@ -25,8 +25,9 @@ export default function Login() {
     }
     setIsLoading(true);
 
-    setTimeout(() => {
-      const result = validateLogin(username.trim(), password);
+    try {
+      const result = await validateLogin(username.trim(), password);
+      
       if (!result) {
         setError('Invalid username or password. Please try again.');
         setIsLoading(false);
@@ -39,13 +40,14 @@ export default function Login() {
         return;
       }
 
-      if (result.role === 'admin') {
-        login('admin');
-      } else {
-        login('worker', result.userData);
-      }
+      // Updated login call with token
+      login(result.role, result.user, result.token);
+      navigate(result.role === 'admin' ? '/admin' : '/');
+    } catch (err) {
+      setError('Login failed. Please check your credentials.');
+    } finally {
       setIsLoading(false);
-    }, 900);
+    }
   };
 
   return (

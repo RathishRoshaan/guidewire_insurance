@@ -14,9 +14,11 @@
 
 const axios = require('axios');
 const Policy = require('../models/Policy');
+const User = require('../models/User'); // Use new User model
 const Worker = require('../models/Worker');
 const Claim = require('../models/Claim');
 const { processInstantPayout } = require('./payout');
+const { getDistanceKm } = require('../utils/geo');
 
 // Track triggered events to avoid duplicates
 const triggeredEvents = new Map();
@@ -94,7 +96,7 @@ async function checkAndTrigger() {
     // Mark as triggered for this hour
     triggeredEvents.set(cityHourKey, { disruptionType, weather, timestamp: now });
 
-    // Find all active policies for workers in this city/state
+    // Find all active policies for users in this city/state
     const activePolicies = await Policy.find({
       status: 'active',
       $or: [
@@ -113,7 +115,33 @@ async function checkAndTrigger() {
     // Auto-create claims for each affected policy
     for (const policy of activePolicies) {
       try {
-        const worker = await Worker.findOne({ workerId: policy.workerId }).catch(() => null);
+        // Try User first, then Worker
+        const user = await User.findById(policy.userId).catch(() => null);
+        const worker = user || await Worker.findOne({ workerId: policy.workerId || policy.userId }).catch(() => null);
+
+        if (!worker) {
+           console.log(`[AUTO-TRIGGER] User/Worker not found for policy ${policy.policyId}`);
+           continue;
+        }
+
+        // ── Geofencing Verification (The Fix) ──
+        // If the user has a lastLocation, check if they are near the trigger city
+        if (worker.lastLocation && worker.lastLocation.lat) {
+          const distance = getDistanceKm(
+            worker.lastLocation.lat, worker.lastLocation.lon,
+            city.lat, city.lon
+          );
+          
+          if (distance > 50) {
+            console.log(`[AUTO-TRIGGER] 🛡️ Geofence: Skipping worker ${worker.username} because last location is ${distance.toFixed(1)}km away from event in ${city.name}`);
+            continue;
+          }
+        } else {
+          // Fallback: If no lastLocation is available, we might want to skip or rely on policy city
+          // For a "full product", we require location data for parametric payouts
+          console.log(`[AUTO-TRIGGER] ⚠️ No location data for worker ${worker.username}, skipping parametric payout for safety.`);
+          continue;
+        }
 
         const dailyCoverage = Math.round(policy.maxCoverage / 7);
         const lostHours = 4 + Math.floor(Math.random() * 4);
@@ -121,6 +149,7 @@ async function checkAndTrigger() {
 
         const claim = new Claim({
           claimId: 'CLM-AT-' + String(Date.now()).slice(-6) + Math.floor(Math.random() * 100),
+          userId: policy.userId,
           workerId: policy.workerId,
           policyId: policy.policyId,
           disruptionType,
@@ -135,6 +164,8 @@ async function checkAndTrigger() {
             lon: city.lon,
             measuredWeather: weather,
           },
+          fraudScore: Math.floor(Math.random() * 15),
+          fraudFlags: ['Parametric auto-trigger — weather verified by API'],
           fraudCheck: {
             isGpsValid: true,
             isWeatherValid: true,
