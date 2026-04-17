@@ -1,3 +1,9 @@
+
+vercel link : https://guidewire-insurance.vercel.app/
+
+
+PPT: https://docs.google.com/presentation/d/18kR3Ry8D2ew5MyH8BJIzLHCqEmEVTsBp/edit?usp=sharing&ouid=108413102903907235922&rtpof=true&sd=true
+
 # GigShield - AI-Powered Parametric Insurance Platform
 
 GigShield is a full-stack parametric insurance platform designed for gig workers. It uses real-time weather and air quality data to automatically trigger insurance claims and provide risk assessments.

@@ -1,4 +1,19 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/_backend' : 'http://localhost:5000');
+// ✅ Always use env variable, fallback only for local
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// Helper for safe fetch
+async function handleResponse(res, defaultMsg) {
+  if (!res.ok) {
+    let err;
+    try {
+      err = await res.json();
+    } catch {
+      err = { error: defaultMsg };
+    }
+    throw new Error(err.error || defaultMsg);
+  }
+  return res.json();
+}
 
 // ── Auth APIs ──
 export async function registerUser(data) {
@@ -7,11 +22,7 @@ export async function registerUser(data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Registration failed' }));
-    throw new Error(err.error || 'Registration failed');
-  }
-  return res.json();
+  return handleResponse(res, 'Registration failed');
 }
 
 export async function loginUser(username, password) {
@@ -20,67 +31,49 @@ export async function loginUser(username, password) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Login failed' }));
-    throw new Error(err.error || 'Login failed');
-  }
-  return res.json();
+  return handleResponse(res, 'Login failed');
 }
 
 // ── Risk APIs ──
 export async function calculateRisk(data) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/risk`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to calculate risk');
-    return res.json();
-  } catch (error) {
-    console.error('Risk API Error:', error);
-    throw error;
-  }
+  const res = await fetch(`${API_BASE_URL}/api/risk`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data), // MUST be object
+  });
+  return handleResponse(res, 'Failed to calculate risk');
 }
 
 export async function getStatePricing(stateName, income = 7000) {
-  const res = await fetch(`${API_BASE_URL}/api/risk/state/${encodeURIComponent(stateName)}?income=${income}`);
-  if (!res.ok) throw new Error('Failed to get state pricing');
-  return res.json();
+  const res = await fetch(
+    `${API_BASE_URL}/api/risk/state/${encodeURIComponent(stateName)}?income=${income}`
+  );
+  return handleResponse(res, 'Failed to get state pricing');
 }
 
 export async function getAvailableStates() {
   const res = await fetch(`${API_BASE_URL}/api/risk/states`);
-  if (!res.ok) throw new Error('Failed to get states');
-  return res.json();
+  return handleResponse(res, 'Failed to get states');
 }
 
 // ── Claim APIs ──
 export async function createClaim(data) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/claims`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to create claim');
-    return res.json();
-  } catch (error) {
-    console.error('Claim API Error:', error);
-    throw error;
-  }
+  const res = await fetch(`${API_BASE_URL}/api/claims`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res, 'Failed to create claim');
 }
 
 export async function getWorkerClaims(workerId) {
   const res = await fetch(`${API_BASE_URL}/api/claims/list/${workerId}`);
-  if (!res.ok) throw new Error('Failed to fetch claims');
-  return res.json();
+  return handleResponse(res, 'Failed to fetch claims');
 }
 
 export async function getAllClaims() {
   const res = await fetch(`${API_BASE_URL}/api/claims/all`);
-  if (!res.ok) throw new Error('Failed to fetch claims');
-  return res.json();
+  return handleResponse(res, 'Failed to fetch claims');
 }
 
 export async function processClaim(claimId, action) {
@@ -89,8 +82,7 @@ export async function processClaim(claimId, action) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action }),
   });
-  if (!res.ok) throw new Error('Failed to process claim');
-  return res.json();
+  return handleResponse(res, 'Failed to process claim');
 }
 
 // ── Policy APIs ──
@@ -100,22 +92,19 @@ export async function createPolicy(data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to create policy');
-  return res.json();
+  return handleResponse(res, 'Failed to create policy');
 }
 
 export async function getWorkerPolicies(workerId) {
   const res = await fetch(`${API_BASE_URL}/api/policies/worker/${workerId}`);
-  if (!res.ok) throw new Error('Failed to fetch policies');
-  return res.json();
+  return handleResponse(res, 'Failed to fetch policies');
 }
 
 // ── Dashboard APIs ──
 export async function getWorkerDashboard(workerId) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/dashboard/worker/${workerId}`);
-    if (!res.ok) throw new Error('Failed to load Dashboard data');
-    return res.json();
+    return await handleResponse(res, 'Failed to load dashboard');
   } catch (e) {
     console.error(e);
     return null;
@@ -125,8 +114,7 @@ export async function getWorkerDashboard(workerId) {
 export async function getAdminDashboard() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/dashboard/admin`);
-    if (!res.ok) throw new Error('Failed to load Dashboard data');
-    return res.json();
+    return await handleResponse(res, 'Failed to load dashboard');
   } catch (e) {
     console.error(e);
     return null;
@@ -140,38 +128,33 @@ export async function manualTrigger(city, disruptionType) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ city, disruptionType }),
   });
-  if (!res.ok) throw new Error('Manual trigger failed');
-  return res.json();
+  return handleResponse(res, 'Manual trigger failed');
 }
 
 export async function getTriggerLog() {
   const res = await fetch(`${API_BASE_URL}/api/triggers/log`);
-  if (!res.ok) throw new Error('Failed to fetch trigger log');
-  return res.json();
+  return handleResponse(res, 'Failed to fetch trigger log');
 }
 
 // ── Worker APIs ──
 export async function getWorker(workerId) {
   const res = await fetch(`${API_BASE_URL}/api/workers/${workerId}`);
-  if (!res.ok) throw new Error('Worker not found');
-  return res.json();
+  return handleResponse(res, 'Worker not found');
 }
 
 export async function getAllWorkers() {
   const res = await fetch(`${API_BASE_URL}/api/workers`);
-  if (!res.ok) throw new Error('Failed to fetch workers');
-  return res.json();
+  return handleResponse(res, 'Failed to fetch workers');
 }
 
-// ── Payment APIs (UPI Simulator) ──
+// ── Payment APIs ──
 export async function initiateUpiPayment(data) {
   const res = await fetch(`${API_BASE_URL}/api/payments/upi/initiate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to initiate payment');
-  return res.json();
+  return handleResponse(res, 'Failed to initiate payment');
 }
 
 export async function verifyUpiPayment(data) {
@@ -180,12 +163,10 @@ export async function verifyUpiPayment(data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Payment verification failed');
-  return res.json();
+  return handleResponse(res, 'Payment verification failed');
 }
 
 export async function getPaymentHistory(userId) {
   const res = await fetch(`${API_BASE_URL}/api/payments/history/${userId}`);
-  if (!res.ok) throw new Error('Failed to load payment history');
-  return res.json();
+  return handleResponse(res, 'Failed to load payment history');
 }
