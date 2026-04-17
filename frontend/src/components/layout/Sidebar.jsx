@@ -12,7 +12,6 @@ import {
   ChevronRight,
   LogOut,
   MapPin,
-  Shield,
 } from 'lucide-react';
 import { useState } from 'react';
 import LanguageSwitcher from '../LanguageSwitcher';

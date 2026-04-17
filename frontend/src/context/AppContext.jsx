@@ -146,9 +146,46 @@ export const AppProvider = ({ children }) => {
           addToast('Could not resolve location name', 'warning');
         }
       },
-      (err) => {
+      async (err) => {
+        try {
+          const ipRes = await fetch('https://ipapi.co/json/');
+          const ipData = await ipRes.json();
+          if (ipData.city && ipData.latitude) {
+            const matched = CITIES.find(c =>
+              ipData.city.toLowerCase().includes(c.name.toLowerCase()) ||
+              c.name.toLowerCase().includes(ipData.city.toLowerCase())
+            );
+            const locationObj = matched || {
+              id: 'ip-detected',
+              name: ipData.city,
+              state: ipData.region,
+              lat: ipData.latitude,
+              lng: ipData.longitude,
+              riskMultiplier: 1.0,
+            };
+            setCurrentLocation(locationObj);
+            setLocationLoading(false);
+            addToast(`📍 Network Location: ${ipData.city}`, 'success');
+            
+            setWeatherLoading(true);
+            const wData = await fetchRealWeather(ipData.latitude, ipData.longitude);
+            if (wData) setWeatherData(wData);
+            setWeatherLoading(false);
+            return;
+          }
+        } catch (ipErr) {
+           console.error('IP Fallback failed', ipErr);
+        }
+        
         setLocationLoading(false);
-        addToast(`Location denied: ${err.message}`, 'warning');
+        addToast(`Location denied: ${err.message}. Defaulting to Mumbai.`, 'warning');
+        
+        const defaultCity = CITIES.find(c => c.name === 'Mumbai');
+        if (defaultCity) {
+           setCurrentLocation(defaultCity);
+           const wData = await fetchRealWeather(defaultCity.lat, defaultCity.lng);
+           if (wData) setWeatherData(wData);
+        }
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -191,8 +228,10 @@ export const AppProvider = ({ children }) => {
       const token = localStorage.getItem('gigcover_token');
       if (!token) return;
 
+      // Removed demo mode bypass
+
       try {
-        const user = await backendApi.getWorker('me'); // This assumes getWorker handles the 'me' token logic or similar
+        const user = await backendApi.getWorker('me'); 
         setCurrentUser(user);
         setIsLoggedIn(true);
         setIsAdmin(user.role === 'admin');

@@ -41,11 +41,26 @@ export default function Payment() {
 
     setLoading(true);
 
-    // Simulate payment verification delay
-    await new Promise(r => setTimeout(r, 2000));
-
     try {
-      // Create policy via backend
+      // 1. Initiate Payment Record
+      const initRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/payments/upi/initiate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser?.id || 'WKR-NEW',
+          amount: selectedPack.premium,
+          packageId: selectedPack.id,
+          packageName: selectedPack.name,
+          city: currentUser?.city || '',
+          state: currentUser?.state || ''
+        })
+      });
+      const initData = await initRes.json();
+      const generatedTxnId = initData.transactionId || txnId;
+
+      // 2. Create Policy (Wait 2s for "processing" UX)
+      await new Promise(r => setTimeout(r, 2000));
+      
       const policyData = {
         workerId: currentUser?.id || 'WKR-NEW',
         packageId: selectedPack.id,
@@ -53,40 +68,47 @@ export default function Payment() {
         weeklyPremium: selectedPack.premium,
         maxCoverage: selectedPack.coverage,
         coveredDisruptions: selectedPack.inclusions || [],
-        transactionId: txnId,
+        transactionId: generatedTxnId,
         city: currentUser?.city || '',
         state: currentUser?.state || '',
       };
 
-      // Try backend first
+      let backendPolicy = null;
       try {
-        const res = await fetch('http://localhost:5000/api/policies', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/policies`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(policyData),
         });
         if (res.ok) {
-          const data = await res.json();
-          setCreatedPolicy(data.policy);
+           const data = await res.json();
+           backendPolicy = data.policy;
         }
-      } catch {
-        // Backend unavailable, create locally
-      }
+      } catch (err) {}
 
-      // Also create in local context
+      // 3. Verify Payment
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/payments/upi/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transactionId: generatedTxnId,
+          userId: currentUser?.id || 'WKR-NEW',
+          policyId: backendPolicy?.policyId || 'POL-NEW',
+          userUpiRef: txnId
+        })
+      });
+
       const localPolicy = createPolicy({
         ...policyData,
         workerName: `${currentUser?.firstName || 'Worker'} ${currentUser?.lastName || ''}`,
       }, true);
 
-      if (!createdPolicy) setCreatedPolicy(localPolicy);
-
+      setCreatedPolicy(backendPolicy || localPolicy);
       setSuccess(true);
       addToast('Payment verified! Policy activated! 🎉', 'success');
     } catch (err) {
       addToast('Payment verification failed. Please try again.', 'error');
     }
-
     setLoading(false);
   };
 

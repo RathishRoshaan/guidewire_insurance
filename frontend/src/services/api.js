@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 // ── Auth APIs ──
 export async function registerUser(data) {
@@ -160,5 +160,32 @@ export async function getWorker(workerId) {
 export async function getAllWorkers() {
   const res = await fetch(`${API_BASE_URL}/api/workers`);
   if (!res.ok) throw new Error('Failed to fetch workers');
+  return res.json();
+}
+
+// ── Payment APIs (UPI Simulator) ──
+export async function initiateUpiPayment(data) {
+  const res = await fetch(`${API_BASE_URL}/api/payments/upi/initiate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to initiate payment');
+  return res.json();
+}
+
+export async function verifyUpiPayment(data) {
+  const res = await fetch(`${API_BASE_URL}/api/payments/upi/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Payment verification failed');
+  return res.json();
+}
+
+export async function getPaymentHistory(userId) {
+  const res = await fetch(`${API_BASE_URL}/api/payments/history/${userId}`);
+  if (!res.ok) throw new Error('Failed to load payment history');
   return res.json();
 }

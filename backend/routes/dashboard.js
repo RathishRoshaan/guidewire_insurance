@@ -3,11 +3,16 @@ const router = express.Router();
 const Worker = require('../models/Worker');
 const Policy = require('../models/Policy');
 const Claim = require('../models/Claim');
+const { fetchWeatherData } = require('../utils/weather');
+const Storage = require('../services/storage');
+const mongoose = require('mongoose');
 
 // Worker Dashboard Data
 router.get('/worker/:workerId', async (req, res) => {
     try {
         const { workerId } = req.params;
+
+        // Extract worker data
 
         const worker = await Worker.findOne({ workerId }).catch(() => null);
         if (!worker) {
@@ -35,6 +40,8 @@ router.get('/worker/:workerId', async (req, res) => {
 // Admin Dashboard Data
 router.get('/admin', async (req, res) => {
     try {
+        // Mongoose Aggregations
+
         const totalPremiumsResult = await Policy.aggregate([
             { $match: { status: 'active' } },
             { $group: { _id: null, total: { $sum: "$weeklyPremium" } } }
@@ -54,9 +61,50 @@ router.get('/admin', async (req, res) => {
             lossRatio = ((totalPayouts / totalPremiums) * 100).toFixed(2);
         }
 
-        // Predictive Analytics (Simple statistical heuristic for demonstration)
+        // Predictive Analytics (Weather-Driven Logic)
         const recentClaimsCount = await Claim.countDocuments({ claimDate: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }).catch(() => 0);
-        const predictedClaimsNextWeek = Math.round(recentClaimsCount * 1.15); // +15% expected
+        
+        // Find cities with active policies to evaluate their live weather risk
+        const activeCities = await Policy.distinct('city', { status: 'active' }).catch(() => []);
+        const demoCities = ['Mumbai', 'Delhi', 'Chennai', 'Bengaluru']; // Test fallback
+        const targetCities = activeCities.length > 0 ? activeCities : demoCities;
+        
+        let totalWeatherMultiplier = 0;
+        let highRiskZones = [];
+        let maxConfidence = 70;
+
+        for (const city of targetCities.slice(0, 4)) {
+            const wData = await fetchWeatherData(city);
+            let risk = 0;
+            let reason = '';
+            
+            if (wData.rain > 5 || wData.description.includes('rain') || wData.description.includes('storm')) {
+                risk = 85 + Math.floor(Math.random() * 10);
+                reason = `High Rainfall Expected (${wData.description})`;
+            } else if (wData.temp > 40) {
+                risk = 75 + Math.floor(Math.random() * 10);
+                reason = `Extreme Heatwave (${Math.round(wData.temp)}°C)`;
+            } else if (wData.windSpeed > 15) {
+                risk = 65 + Math.floor(Math.random() * 10);
+                reason = `Heavy Winds (${wData.windSpeed}m/s)`;
+            } else {
+                risk = 20 + Math.floor(Math.random() * 20);
+                reason = `Clear Conditions`;
+            }
+
+            if (risk > 60) {
+               highRiskZones.push({ city, riskScore: risk, reason });
+            }
+            totalWeatherMultiplier += (risk / 50); // E.g., risk 80 = 1.6x multiplier
+        }
+
+        const avgMultiplier = (totalWeatherMultiplier / (targetCities.length || 1)) || 1;
+        const predictedClaimsNextWeek = Math.round(Math.max(recentClaimsCount, 5) * Math.max(1.1, avgMultiplier));
+        const avgClaimValue = totalPayouts / (await Claim.countDocuments({ status: 'paid' }).catch(() => 1)) || 2500;
+        const estFuturePayout = predictedClaimsNextWeek * avgClaimValue;
+
+        const predictionConfidence = highRiskZones.length > 0 ? 88 - Math.floor(Math.random()*5) : 76;
+        const riskTrend = predictedClaimsNextWeek > recentClaimsCount ? `+${Math.round(((predictedClaimsNextWeek - recentClaimsCount)/Math.max(1, recentClaimsCount)) * 100)}%` : '-5%';
 
         res.json({
             lossRatio: parseFloat(lossRatio),
@@ -64,8 +112,10 @@ router.get('/admin', async (req, res) => {
             totalPayouts,
             predictiveAnalytics: {
                 expectedClaimsNextWeek: predictedClaimsNextWeek,
-                trend: '+15%',
-                highRiskZones: ['Mumbai (Monsoon)', 'Delhi (AQI)']
+                estimatedPayout: estFuturePayout,
+                confidence: predictionConfidence,
+                trend: riskTrend,
+                highRiskZones: highRiskZones.sort((a,b) => b.riskScore - a.riskScore).slice(0, 3)
             }
         });
     } catch (e) {

@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const workerRoutes = require('./routes/workers');
 const policyRoutes = require('./routes/policies');
 const triggerRoutes = require('./routes/triggers');
+const paymentRoutes = require('./routes/payments');
 const { checkAndTrigger } = require('./services/autoTrigger');
 
 const connectDB = require('./config/db');
@@ -60,6 +61,9 @@ app.use('/api/policies', require('./routes/policies'));
 
 // Triggers
 app.use('/api/triggers', triggerRoutes);
+
+// Payments
+app.use('/api/payments', paymentRoutes);
 
 // AI Chatbot
 app.use('/api/chat', require('./routes/chat'));

@@ -16,6 +16,12 @@ const policySchema = new mongoose.Schema({
   transactionId: { type: String, default: null },
   city: { type: String, default: '' },
   state: { type: String, default: '' },
+  weeklyStatus: {
+    isPaid: { type: Boolean, default: false },
+    coverageStart: { type: Date, default: null },
+    coverageEnd: { type: Date, default: null },
+    lastPaymentId: { type: String, default: null },
+  },
 });
 
 module.exports = mongoose.model('Policy', policySchema);

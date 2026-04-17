@@ -24,12 +24,20 @@ export default function WorkerDashboard() {
   
   // Real live backend metrics
   const [liveMetrics, setLiveMetrics] = useState(null);
+  const [paymentHistory, setPaymentHistory] = useState([]);
 
   useEffect(() => {
     if (currentUser?.id) {
         // Fetch new intelligent dashboard backend metrics
         getWorkerDashboard(currentUser.id).then(res => {
             if (res) setLiveMetrics(res);
+        });
+        
+        // Fetch payment history
+        import('../services/api').then(({ getPaymentHistory }) => {
+            getPaymentHistory(currentUser.id).then(res => {
+                if (res && res.payments) setPaymentHistory(res.payments);
+            });
         });
     }
   }, [currentUser]);
@@ -135,9 +143,16 @@ export default function WorkerDashboard() {
         </div>
       </header>
 
+      <div className="dashboard-tabs" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem', padding: '0 2rem' }}>
+        <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')} style={{ padding: '0.75rem 1.5rem', background: 'transparent', color: activeTab === 'overview' ? 'var(--primary-400)' : 'var(--text-muted)', borderBottom: activeTab === 'overview' ? '2px solid var(--primary-400)' : 'none', fontWeight: 600 }}>Overview</button>
+        <button className={`tab-btn ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')} style={{ padding: '0.75rem 1.5rem', background: 'transparent', color: activeTab === 'payments' ? 'var(--primary-400)' : 'var(--text-muted)', borderBottom: activeTab === 'payments' ? '2px solid var(--primary-400)' : 'none', fontWeight: 600 }}>Payments</button>
+      </div>
+
       <div className="dashboard-grid">
         {/* Left Column: Stats & Policy */}
         <div className="main-column animate-fade-in-up delay-1">
+          {activeTab === 'overview' ? (
+            <>
           <div className="stats-row">
             <div className="glass-card mini-stat">
               <Package size={20} style={{ color: '#6366f1' }} />
@@ -334,6 +349,44 @@ export default function WorkerDashboard() {
               )}
             </div>
           </div>
+          </>
+          ) : (
+            <div className="glass-card">
+              <div className="card-header">
+                <h3><History size={18} /> Premium Payment History</h3>
+              </div>
+              <div className="payments-list" style={{ padding: '1rem' }}>
+                {(!paymentHistory || paymentHistory.length === 0) ? (
+                   <p style={{ color: 'var(--text-muted)' }}>No UPI payments found.</p>
+                ) : (
+                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', marginTop: '1rem' }}>
+                     <thead>
+                       <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                         <th style={{ paddingBottom: '0.75rem' }}>Date</th>
+                         <th style={{ paddingBottom: '0.75rem' }}>Txn ID</th>
+                         <th style={{ paddingBottom: '0.75rem' }}>Amount</th>
+                         <th style={{ paddingBottom: '0.75rem' }}>Status</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {paymentHistory.map(payment => (
+                         <tr key={payment.transactionId} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                           <td style={{ padding: '1rem 0', fontSize: '0.9rem' }}>{new Date(payment.timestamp).toLocaleDateString()}</td>
+                           <td style={{ padding: '1rem 0', fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--primary-400)' }}>{payment.transactionId}</td>
+                           <td style={{ padding: '1rem 0', fontWeight: 600 }}>₹{payment.amount}</td>
+                           <td style={{ padding: '1rem 0' }}>
+                             <span className={`badge badge-${payment.status === 'success' ? 'success' : 'warning'}`}>
+                               {payment.status}
+                             </span>
+                           </td>
+                         </tr>
+                       ))}
+                     </tbody>
+                   </table>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Local Context & Weather */}

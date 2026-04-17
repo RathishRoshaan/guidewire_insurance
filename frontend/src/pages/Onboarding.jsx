@@ -112,6 +112,7 @@ export default function Onboarding() {
 
   const handleActivate = async () => {
     setIsActivating(true);
+    setStepError('');
     try {
       const cityObj = CITIES.find(c => c.id === formData.city);
       const platObj = PLATFORMS.find(p => p.id === formData.platform);
@@ -137,11 +138,14 @@ export default function Onboarding() {
       login('worker', regResult.user, regResult.token);
       navigate('/');
     } catch (err) {
-      setStepError(err.message || 'Registration failed. Please try again.');
+      console.error('Registration failed:', err);
+      setStepError(err.message || 'Registration failed.');
     } finally {
       setIsActivating(false);
     }
   };
+
+
 
   if (!CITIES || !PLATFORMS) return <div className="page-container"><div className="loader" /></div>;
 

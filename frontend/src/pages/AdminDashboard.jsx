@@ -4,7 +4,7 @@ import { getAdminDashboard } from '../services/api';
 import {
   Users, Shield, FileWarning, DollarSign, AlertTriangle,
   TrendingUp, TrendingDown, Activity, Zap, ArrowRight,
-  Clock, MapPin, ChevronRight
+  Clock, MapPin, ChevronRight, CheckCircle
 } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Link } from 'react-router-dom';
@@ -168,6 +168,66 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Predictive Analytics Row */}
+      {liveAdminMetrics?.predictiveAnalytics && (
+        <div className="dashboard-charts animate-fade-in-up delay-2" style={{ marginTop: '1.5rem' }}>
+          <div className="glass-card chart-card">
+            <div className="chart-header">
+              <h3><Activity size={18} style={{ color: '#0ea5e9' }} /> AI Claims Forecast (Next 7 Days)</h3>
+              <span className={`badge badge-${parseInt(liveAdminMetrics.predictiveAnalytics.trend) > 0 ? 'warning' : 'success'}`}>
+                Trend {liveAdminMetrics.predictiveAnalytics.trend}
+              </span>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '1rem' }}>
+               <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px' }}>
+                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Expected Claims</p>
+                 <h2 style={{ fontSize: '2rem', color: 'var(--text-primary)', margin: '0.5rem 0' }}>{liveAdminMetrics.predictiveAnalytics.expectedClaimsNextWeek}</h2>
+                 <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Confidence: {liveAdminMetrics.predictiveAnalytics.confidence}%</p>
+               </div>
+               <div style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Est. Payout</p>
+                 <h2 style={{ fontSize: '2rem', color: 'var(--danger-400)', margin: '0.5rem 0' }}>₹{(liveAdminMetrics.predictiveAnalytics.estimatedPayout || 0).toLocaleString()}</h2>
+               </div>
+            </div>
+            
+            {liveAdminMetrics.predictiveAnalytics.highRiskZones?.length > 0 && (
+              <div style={{ marginTop: '1.5rem' }}>
+                <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', color: 'var(--text-muted)' }}>High-Risk Zones Monitor</h4>
+                {liveAdminMetrics.predictiveAnalytics.highRiskZones.map((zone, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '8px', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <MapPin size={14} style={{ color: 'var(--warning-400)' }} />
+                      <span style={{ fontWeight: 500 }}>{zone.city}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>{zone.reason}</span>
+                    </div>
+                    <span className="badge badge-danger">Risk {zone.riskScore}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="glass-card chart-card">
+            <div className="chart-header">
+              <h3><AlertTriangle size={18} style={{ color: '#ef4444' }} /> System Alerts</h3>
+            </div>
+            {(liveAdminMetrics.lossRatio > 30) ? (
+              <div style={{ padding: '1.5rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid var(--danger-400)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--danger-400)' }}>Loss Ratio Warning ({liveAdminMetrics.lossRatio}%)</strong>
+                <p style={{ fontSize: '0.9rem', opacity: 0.9 }}>Projected payouts are approaching premium collections. Consider triggering automated parameter adjustments for upcoming renewals.</p>
+                <button className="btn-primary" style={{ alignSelf: 'flex-start', background: 'var(--danger-500)', border: 'none' }}>Review Risk Parameters</button>
+              </div>
+            ) : (
+              <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                 <CheckCircle size={32} style={{ color: 'var(--success-400)', marginBottom: '1rem' }} />
+                 <p>All systemic parameters are currently nominal.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Bottom Row */}
       <div className="dashboard-bottom animate-fade-in-up delay-3">
