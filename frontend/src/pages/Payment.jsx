@@ -43,7 +43,7 @@ export default function Payment() {
 
     try {
       // 1. Initiate Payment Record
-      const initRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/payments/upi/initiate`, {
+      const initRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/payments/upi/initiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,7 +75,7 @@ export default function Payment() {
 
       let backendPolicy = null;
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/policies`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/policies`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(policyData),
@@ -87,7 +87,7 @@ export default function Payment() {
       } catch (err) {}
 
       // 3. Verify Payment
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/payments/upi/verify`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/payments/upi/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

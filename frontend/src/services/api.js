@@ -66,6 +66,15 @@ export async function createClaim(data) {
   return handleResponse(res, 'Failed to create claim');
 }
 
+export async function submitManualClaim(data) {
+  const res = await fetch(`${API_BASE_URL}/api/claims/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res, 'Failed to submit manual claim');
+}
+
 export async function getWorkerClaims(workerId) {
   const res = await fetch(`${API_BASE_URL}/api/claims/list/${workerId}`);
   return handleResponse(res, 'Failed to fetch claims');

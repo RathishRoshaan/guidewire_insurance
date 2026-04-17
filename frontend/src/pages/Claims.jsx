@@ -4,12 +4,15 @@ import { FileWarning, Search, CheckCircle, XCircle, AlertTriangle, ShieldCheck, 
 import './Claims.css';
 
 export default function Claims() {
-  const { data, processClaim, isAdmin, currentUser, verifyClaimWithBackend } = useApp();
+  const { data, processClaim, isAdmin, currentUser, verifyClaimWithBackend, submitManualClaim } = useApp();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedClaim, setSelectedClaim] = useState(null);
   const [backendCheckResult, setBackendCheckResult] = useState(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [manualReason, setManualReason] = useState('');
+  const [submittingClaim, setSubmittingClaim] = useState(false);
 
   if (!data) return <div className="page-container"><div className="skeleton" style={{ height: 400 }} /></div>;
 
@@ -46,15 +49,59 @@ export default function Claims() {
         <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
           <button 
             className="btn-primary" 
-            onClick={() => {
-              const reason = window.prompt("Enter reason for manual claim request:");
-              if(reason) {
-                submitManualClaim(reason);
-              }
-            }}
+            id="btn-request-manual-claim"
+            onClick={() => setShowManualModal(true)}
           >
             + Request Manual Claim
           </button>
+        </div>
+      )}
+
+      {/* Manual Claim Modal */}
+      {showManualModal && (
+        <div className="modal-overlay" onClick={() => setShowManualModal(false)}>
+          <div className="modal-content glass-card animate-fade-in-up" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <div className="modal-header">
+              <h3>📝 Request Manual Claim</h3>
+              <button className="modal-close" onClick={() => setShowManualModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                Describe the disruption or reason for your manual claim. An admin will review it within 24 hours.
+              </p>
+              <textarea
+                id="manual-claim-reason"
+                className="form-input"
+                style={{ width: '100%', minHeight: 120, resize: 'vertical', fontFamily: 'inherit' }}
+                placeholder="e.g. Heavy rain in my area prevented me from working on April 18th..."
+                value={manualReason}
+                onChange={e => setManualReason(e.target.value)}
+              />
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', justifyContent: 'flex-end' }}>
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => { setShowManualModal(false); setManualReason(''); }}
+                  disabled={submittingClaim}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="btn-primary" 
+                  id="btn-submit-manual-claim"
+                  disabled={submittingClaim || !manualReason.trim()}
+                  onClick={async () => {
+                    setSubmittingClaim(true);
+                    await submitManualClaim(manualReason.trim());
+                    setSubmittingClaim(false);
+                    setShowManualModal(false);
+                    setManualReason('');
+                  }}
+                >
+                  {submittingClaim ? 'Submitting...' : 'Submit Claim'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

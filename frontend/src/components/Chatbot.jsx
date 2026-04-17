@@ -77,7 +77,7 @@ export default function Chatbot() {
       });
 
       const data = await res.json();
-      const reply = data.message || 'Sorry, I couldn\'t process that. Please try again.';
+      const reply = data.reply || data.message || 'Sorry, I couldn\'t process that. Please try again.';
 
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (err) {

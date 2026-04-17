@@ -359,22 +359,28 @@ export const AppProvider = ({ children }) => {
 
   // ── Manual claim creation ──
   const submitManualClaim = useCallback(async (reason) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      addToast('You must be logged in to submit a claim', 'error');
+      return;
+    }
     try {
+      const userId = currentUser.username || currentUser.id || currentUser._id;
       const claimData = {
-        workerId: currentUser.username || currentUser.id,
-        workerName: currentUser.fullName || `${currentUser.firstName} ${currentUser.lastName}`,
-        city: currentUser.city || 'Unknown',
-        platform: currentUser.platform || 'Unknown',
-        disruptionType: { id: 'manual', name: 'Manual Request', icon: '📝' },
-        lostHours: 8,
-        claimDate: new Date().toISOString().split('T')[0],
-        reason: reason
+        userId,
+        workerId: userId,
+        triggerType: 'Manual Request',
+        description: reason || 'Manual claim submitted by worker',
+        claimedAmount: 0,
       };
-      await backendApi.createClaim(claimData);
-      addToast('Manual claim submitted for admin review 📝', 'success');
-      fetchGlobalData();
+      const res = await backendApi.submitManualClaim(claimData);
+      if (res?.success) {
+        addToast('✅ Manual claim submitted for admin review!', 'success');
+        fetchGlobalData(); // Refresh claims list
+      } else {
+        addToast(res?.error || 'Failed to submit claim', 'error');
+      }
     } catch (err) {
+      console.error('submitManualClaim error:', err);
       addToast(`Failed to submit claim: ${err.message}`, 'error');
     }
   }, [currentUser, addToast, fetchGlobalData]);

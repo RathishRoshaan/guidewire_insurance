@@ -133,20 +133,82 @@ router.post('/', async (req, res) => {
   }
 });
 
+// POST /request — Manual claim submission by worker
+router.post('/request', async (req, res) => {
+  try {
+    const { userId, policyId, triggerType, claimedAmount, description, workerId } = req.body;
+
+    const resolvedUserId = userId || workerId;
+    if (!resolvedUserId) {
+      return res.status(400).json({ success: false, error: 'userId is required' });
+    }
+
+    const claimId = 'CLM-' + String(Date.now()).slice(-7);
+
+    // Find user's policy if policyId not provided
+    let resolvedPolicyId = policyId;
+    if (!resolvedPolicyId) {
+      try {
+        const policy = await Policy.findOne({ $or: [{ userId: resolvedUserId }, { workerId: resolvedUserId }] });
+        resolvedPolicyId = policy?.policyId || 'MANUAL-' + String(Date.now()).slice(-5);
+      } catch {
+        resolvedPolicyId = 'MANUAL-' + String(Date.now()).slice(-5);
+      }
+    }
+
+    const newClaim = await Claim.create({
+      claimId,
+      userId: resolvedUserId,
+      workerId: resolvedUserId,
+      policyId: resolvedPolicyId,
+      disruptionType: triggerType || description || 'Manual Request',
+      claimAmount: claimedAmount || 0,
+      lostHours: 8,
+      description: description || 'Manual claim submitted by worker',
+      claimDate: new Date(),
+      status: 'pending_review',
+      isAutoTrigger: false,
+      isManualRequest: true,
+      fraudCheck: {
+        isGpsValid: false,
+        isWeatherValid: false,
+        score: 0,
+        reason: 'Manual claim — pending admin review',
+      },
+    });
+
+    console.log(`[Claims] Manual claim created: ${claimId} for user ${resolvedUserId}`);
+
+    return res.json({
+      success: true,
+      message: 'Claim submitted successfully',
+      claim: newClaim,
+    });
+  } catch (err) {
+    console.error('[Claims] Manual claim error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to submit claim' });
+  }
+});
+
 // GET /list/:workerId — Get claims for a worker
 router.get('/list/:workerId', async (req, res) => {
   try {
-    const claims = await Claim.find({ workerId: req.params.workerId }).sort({ claimDate: -1 }).limit(50);
+    const claims = await Claim.find({
+      $or: [
+        { workerId: req.params.workerId },
+        { userId: req.params.workerId }
+      ]
+    }).sort({ claimDate: -1 }).limit(50);
     res.json(claims);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch claims' });
   }
 });
 
-// GET /all — Get all claims (admin)
+// GET /all — Get all claims (admin) — includes manual and auto claims
 router.get('/all', async (req, res) => {
   try {
-    const claims = await Claim.find().sort({ claimDate: -1 }).limit(200);
+    const claims = await Claim.find().sort({ claimDate: -1 }).limit(500);
     res.json(claims);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch claims' });

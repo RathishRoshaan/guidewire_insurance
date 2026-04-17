@@ -12,6 +12,7 @@ const claimSchema = new mongoose.Schema({
   claimDate: { type: Date, default: Date.now },
   status: { type: String, enum: ['pending_review', 'auto_approved', 'paid', 'flagged', 'rejected'], default: 'pending_review' },
   isAutoTrigger: { type: Boolean, default: false },
+  isManualRequest: { type: Boolean, default: false },
   
   // Fraud detection outputs
   fraudScore: { type: Number, default: 0 },
