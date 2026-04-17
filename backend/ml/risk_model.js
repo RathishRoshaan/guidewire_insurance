@@ -114,11 +114,19 @@ function calculateRiskScore({ state, city, weeklyIncome, platform, weatherData }
   return { riskScore, riskLevel, riskFactors, stateProfile, seasonalMult };
 }
 
+const packageCache = {};
+
 /**
  * Generate 3 dynamically-priced insurance packages
  */
 async function generatePackages({ state, weeklyIncome, riskScore, riskLevel }) {
   const income = weeklyIncome || 7000;
+  const cacheKey = `${state}_${income}_${riskScore}`;
+  
+  // Return cached generated packages if already processed within server session
+  if (packageCache[cacheKey]) {
+    return packageCache[cacheKey];
+  }
 
   try {
     const axios = require('axios');
@@ -159,11 +167,16 @@ Format:
       text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
       const generated = JSON.parse(text);
       if (Array.isArray(generated) && generated.length === 3) {
+        packageCache[cacheKey] = generated;
         return generated;
       }
     }
   } catch (err) {
-    console.error('Gemini dynamic pricing error, falling back to ML logic:', err.message);
+    if (err.response?.status === 429) {
+      console.warn(`[Gemini API] Rate limit reached (429). Silently falling back to robust mathematical ML logic.`);
+    } else {
+      console.error('Gemini dynamic pricing error, falling back to ML logic:', err.message);
+    }
   }
 
   // Base premium percentages (Fallback Statistical Model)
@@ -248,6 +261,7 @@ Format:
     },
   ];
 
+  packageCache[cacheKey] = packages;
   return packages;
 }
 
