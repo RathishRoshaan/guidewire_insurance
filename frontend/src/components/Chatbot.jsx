@@ -61,10 +61,9 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
-      // Use relative path for Vercel compatibility or fallback to localhost
-      // If the current window is on guidewire-insurance.vercel.app, we try to hit /_backend/api/chat
-      const isVercel = window.location.hostname.includes('vercel.app');
-      const API_BASE = isVercel ? '/_backend' : (import.meta.env.VITE_API_URL || 'http://localhost:5000');
+      // Sync with api.js logic: Use VITE_API_URL or fallback to localhost
+      // On Vercel, if VITE_API_URL is '/_backend', it resolves perfectly
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       
       const history = messages.slice(1).map(m => ({
         role: m.role === 'assistant' ? 'bot' : 'user',
@@ -82,7 +81,8 @@ export default function Chatbot() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server responded with ${res.status}`);
+        console.error('[Chatbot] Server Error Body:', errorData);
+        throw new Error(errorData.error || errorData.message || `Server responded with ${res.status}`);
       }
 
       const data = await res.json();
@@ -91,9 +91,13 @@ export default function Chatbot() {
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (err) {
       console.error('Chatbot error:', err);
+      // If the error message is a common technical one, translate it to a user-friendly one
+      let userError = err.message;
+      if (userError.includes('Failed to fetch')) userError = 'Could not connect to the backend server. Please check your internet or server status.';
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `Sorry, I'm having trouble: ${err.message}. Please try again later. 🔄`,
+        content: `Sorry, I'm having trouble: ${userError}. Please try again later. 🔄`,
       }]);
     }
 

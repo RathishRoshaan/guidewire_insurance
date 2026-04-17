@@ -17,7 +17,7 @@ const connectDB = async () => {
       return conn;
     } catch (localError) {
       console.error('❌ Local In-Memory DB failed:', localError);
-      process.exit(1);
+      // Removed process.exit(1) to keep server alive for other services (AI Chatbot)
     }
   }
 };
