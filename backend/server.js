@@ -46,7 +46,7 @@ app.use('/api/risk', riskRoutes);
 app.use('/calculate-risk', riskRoutes); // Legacy compatibility
 
 // Claims
-app.use('/api/claims', require('./routes/claims'));
+app.use('/api/claims', claimRoutes);
 app.use('/create-claim', claimRoutes); // Legacy compatibility
 
 // Dashboard

@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '../../context/AppContext';
 import {
   LayoutDashboard,
@@ -34,6 +35,7 @@ const workerNav = [
 ];
 
 export default function Sidebar() {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const { data, isAdmin, currentUser, currentLocation, logout } = useApp();
   const location = useLocation();
@@ -75,7 +77,7 @@ export default function Sidebar() {
                   <span className="nav-badge">{activeAlerts}</span>
                 )}
               </div>
-              {!collapsed && <span className="nav-label">{item.label}</span>}
+              {!collapsed && <span className="nav-label">{t(`nav.${item.path === '/' ? 'dashboard' : item.path.substring(1)}`, item.label)}</span>}
               {isActive && <div className="nav-indicator" />}
             </NavLink>
           );
@@ -89,10 +91,10 @@ export default function Sidebar() {
             <LanguageSwitcher />
           </div>
           <div className="profile-section">
-            <div className="avatar-mini">{isAdmin ? 'A' : (currentUser?.firstName?.[0] || 'U')}</div>
+            <div className="avatar-mini">{isAdmin ? 'A' : ((currentUser?.fullName?.[0] || currentUser?.username?.[0] || 'U').toUpperCase())}</div>
             <div className="profile-info">
               <span className="profile-name">
-                {isAdmin ? 'Admin User' : currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Guest Partner'}
+                {isAdmin ? 'Admin User' : currentUser ? (currentUser.fullName || currentUser.username) : 'Guest Partner'}
               </span>
               <span className="profile-role">
                 {isAdmin ? 'Administrator' : currentUser ? `@${currentUser.username}` : 'Not Signed In'}

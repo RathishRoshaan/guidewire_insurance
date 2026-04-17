@@ -79,16 +79,16 @@ router.get('/admin', async (req, res) => {
             let reason = '';
             
             if (wData.rain > 5 || wData.description.includes('rain') || wData.description.includes('storm')) {
-                risk = 85 + Math.floor(Math.random() * 10);
+                risk = 85 + (wData.rain > 20 ? 10 : 0);
                 reason = `High Rainfall Expected (${wData.description})`;
             } else if (wData.temp > 40) {
-                risk = 75 + Math.floor(Math.random() * 10);
+                risk = 75 + ((wData.temp - 40) * 2);
                 reason = `Extreme Heatwave (${Math.round(wData.temp)}°C)`;
             } else if (wData.windSpeed > 15) {
-                risk = 65 + Math.floor(Math.random() * 10);
+                risk = 65 + ((wData.windSpeed - 15) * 1.5);
                 reason = `Heavy Winds (${wData.windSpeed}m/s)`;
             } else {
-                risk = 20 + Math.floor(Math.random() * 20);
+                risk = 20 + (wData.humidity / 5);
                 reason = `Clear Conditions`;
             }
 
@@ -103,7 +103,7 @@ router.get('/admin', async (req, res) => {
         const avgClaimValue = totalPayouts / (await Claim.countDocuments({ status: 'paid' }).catch(() => 1)) || 2500;
         const estFuturePayout = predictedClaimsNextWeek * avgClaimValue;
 
-        const predictionConfidence = highRiskZones.length > 0 ? 88 - Math.floor(Math.random()*5) : 76;
+        const predictionConfidence = highRiskZones.length > 0 ? 88 - (highRiskZones.length * 2) : 76;
         const riskTrend = predictedClaimsNextWeek > recentClaimsCount ? `+${Math.round(((predictedClaimsNextWeek - recentClaimsCount)/Math.max(1, recentClaimsCount)) * 100)}%` : '-5%';
 
         res.json({

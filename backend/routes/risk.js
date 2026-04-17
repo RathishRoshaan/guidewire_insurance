@@ -6,7 +6,7 @@ const router = express.Router();
 const { calculateRiskScore, generatePackages, calculateSimpleRiskScore, STATE_RISK_PROFILES } = require('../ml/risk_model');
 
 // POST / — Full risk calculation with dynamic packages
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { state, city, weeklyIncome, platform, weatherData, rain, aqi, temp } = req.body;
 
@@ -25,7 +25,7 @@ router.post('/', (req, res) => {
       weatherData: weatherData || { rain: rain || 0, aqi: aqi || 50, temp: temp || 30, humidity: 60 },
     });
 
-    const packages = generatePackages({
+    const packages = await generatePackages({
       state: state || 'Maharashtra',
       weeklyIncome: weeklyIncome || 7000,
       riskScore: riskResult.riskScore,
@@ -47,7 +47,7 @@ router.post('/', (req, res) => {
 });
 
 // GET /state/:stateName — Get state-specific pricing for landing page
-router.get('/state/:stateName', (req, res) => {
+router.get('/state/:stateName', async (req, res) => {
   try {
     const stateName = req.params.stateName;
     const profile = STATE_RISK_PROFILES[stateName];
@@ -65,7 +65,7 @@ router.get('/state/:stateName', (req, res) => {
       weatherData: { rain: 0, aqi: 50, temp: 30, humidity: 60 },
     });
 
-    const packages = generatePackages({
+    const packages = await generatePackages({
       state: stateName,
       weeklyIncome: income,
       riskScore: riskResult.riskScore,

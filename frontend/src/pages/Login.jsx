@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Shield, User, Lock, LayoutDashboard, ArrowRight, Sparkles, CheckCircle, XCircle, UserPlus, Eye, EyeOff, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import './Login.css';
 
 export default function Login() {
@@ -13,8 +14,6 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,11 +51,12 @@ export default function Login() {
 
   return (
     <div className="login-page">
-
-
       {/* Right form panel */}
       <div className="login-form-container">
         <div className="form-wrapper animate-fade-in-up">
+          <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+             <LanguageSwitcher />
+          </div>
           <div className="form-header">
             <h3>Sign In to GigCover</h3>
             <p>Access your dashboard and protection status</p>

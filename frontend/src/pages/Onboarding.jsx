@@ -230,10 +230,29 @@ export default function Onboarding() {
                 </header>
                 <div className="form-grid">
                   <div className="input-group">
-                    <label><MapPin size={14} /> Your City</label>
+                    <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span><MapPin size={14} /> Your City / State</span>
+                      <button type="button" className="btn-secondary btn-xs" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }} onClick={async () => {
+                        // Attempt browser geolocation first
+                        const loc = await detectLocation();
+                        if (loc && loc.cityId) {
+                          setFormData(prev => ({ ...prev, city: loc.cityId }));
+                          return;
+                        }
+                        // Fallback: Ask user explicitly
+                        const answer = window.prompt("GPS failed. Which state are you in? (e.g. Tamil Nadu, Maharashtra)");
+                        if(answer) {
+                          const matched = CITIES.find(c => c.state.toLowerCase().includes(answer.toLowerCase()) || answer.toLowerCase().includes(c.state.toLowerCase()));
+                          if(matched) setFormData({...formData, city: matched.id});
+                          else alert("Could not find a matching service zone for that state.");
+                        }
+                      }}>
+                        Auto-Detect (GPS)
+                      </button>
+                    </label>
                     <select value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })}>
-                      <option value="">Select City</option>
-                      {CITIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      <option value="">Select City / State</option>
+                      {CITIES.map(c => <option key={c.id} value={c.id}>{c.name}, {c.state}</option>)}
                     </select>
                   </div>
                   <div className="input-group">

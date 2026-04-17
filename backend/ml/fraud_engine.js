@@ -86,7 +86,7 @@ async function analyzeFraud({
     checks.amountVerified = false;
   }
 
-  // ── 3. GPS Location Mismatch Check ──
+  // ── 3. GPS Location Mismatch Check & Velocity Spoofing ──
   if (location && operationZone) {
     const dist = getDistanceKm(
       location.lat, location.lon,
@@ -97,6 +97,23 @@ async function analyzeFraud({
       reasons.push(`GPS location is ${dist.toFixed(1)}km from registered operation zone (max: ${operationZone.radius_km || 50}km)`);
       checks.locationVerified = false;
     }
+  }
+
+  // Velocity Spoofing Check (requires querying last claim location)
+  try {
+    const lastClaim = await Claim.findOne({ workerId }).sort({ claimDate: -1 });
+    if (lastClaim && lastClaim.location && location) {
+      const timeDiffHours = (new Date() - lastClaim.claimDate) / (1000 * 60 * 60);
+      const distFromLast = getDistanceKm(location.lat, location.lon, lastClaim.location.lat, lastClaim.location.lon);
+      const velocity = distFromLast / (timeDiffHours || 0.1);
+      if (velocity > 150) { // e.g. jumping 150km out of nowhere in 1 hour
+        fraudScore += 50;
+        reasons.push(`GPS Spoofing Detected: Impossible travel velocity (${Math.round(velocity)} km/h) since last claim`);
+        checks.locationVerified = false;
+      }
+    }
+  } catch (e) {
+    // DB error, skip
   }
 
   // ── 4. Weather Verification Checks ──
@@ -126,6 +143,15 @@ async function analyzeFraud({
         reasons.push(`Claimed "Severe Pollution" but actual AQI is ${actualWeather.aqi} (threshold: 300)`);
         checks.weatherVerified = false;
       }
+    }
+
+    // Historical API Mismatch (Advanced AI Check)
+    // If the claim is submitted >2 hours after the event, we should verify against historical records
+    // Currently simulated as if the historical record completely mismatches the claim scenario
+    if (actualWeather.isHistoricalMismatch) {
+        fraudScore += 45;
+        reasons.push(`Historical weather data contradicts claim. Fake/Spoofed Weather Claim detected.`);
+        checks.weatherVerified = false;
     }
   }
 

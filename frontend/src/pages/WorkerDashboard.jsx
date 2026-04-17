@@ -15,7 +15,7 @@ export default function WorkerDashboard() {
   const {
     data, currentUser, currentLocation, locationLoading,
     weatherData, generateRiskAssessment, weatherLoading,
-    updatePolicy, getPackages, PLAN_FEATURES, CITIES, PLATFORMS,
+    updatePolicy, createPolicy, getPackages, PLAN_FEATURES, CITIES, PLATFORMS,
     getBackendRisk
   } = useApp();
   const [activeTab, setActiveTab] = useState('overview');
@@ -86,19 +86,49 @@ export default function WorkerDashboard() {
     }
   }, [currentWeather, getBackendRisk]);
 
-  // Handle plan change
-  const handleUpgrade = (pkg) => {
-    if (!userPolicy) return;
-    updatePolicy(userPolicy.id, pkg);
+  // Handle plan change or create
+  const handleUpgrade = async (pkg) => {
+    if (!window.confirm(`Are you sure you want to select the ${pkg.name} plan for ₹${pkg.premium}/wk?`)) return;
+    
+    if (!userPolicy) {
+      await createPolicy({
+          workerId: currentUser.id || currentUser.username,
+          workerName: currentUser.fullName || currentUser.username || 'User',
+          city: currentLocation?.name || 'Local',
+          platform: currentUser.platform || 'General',
+          packageId: pkg.id,
+          packageName: pkg.name,
+          weeklyPremium: pkg.premium,
+          maxCoverage: pkg.coverage,
+          included: pkg.included || pkg.inclusions,
+          status: 'active',
+      });
+      // Optionally trigger a reload or context refetch, AppContext createPolicy handles basic refresh or toast.
+      setTimeout(() => window.location.reload(), 1500); 
+    } else {
+      updatePolicy(userPolicy.id, pkg);
+      setTimeout(() => window.location.reload(), 1500); 
+    }
     setShowUpgradeModal(false);
   };
 
   const daysRemaining = liveMetrics ? liveMetrics.renewalInDays : 0;
 
-  const packages = useMemo(() => {
-    if (!userPolicy) return [];
-    return getPackages(userPolicy.weeklyPremium / (userPolicy.multiplier || 1.0), userPolicy.maxCoverage / (userPolicy.multiplier || 1.0));
-  }, [userPolicy, getPackages]);
+  const [packages, setPackages] = useState([]);
+
+  useEffect(() => {
+    if (showUpgradeModal && packages.length === 0 && currentUser && currentLocation) {
+      import('../services/api').then(({ calculateRisk }) => {
+        calculateRisk({
+          state: currentLocation.state || 'Maharashtra',
+          weeklyIncome: currentUser.weeklyIncome || 7000,
+          platform: currentUser.platform || 'Swiggy'
+        }).then(res => {
+          if (res?.packages) setPackages(res.packages);
+        });
+      });
+    }
+  }, [showUpgradeModal, currentUser, currentLocation, packages.length]);
 
   const localRisk = useMemo(() => {
     if (!currentLocation) return null;
@@ -118,9 +148,9 @@ export default function WorkerDashboard() {
       <header className="dashboard-hero animate-fade-in-up">
         <div className="hero-content">
           <div className="user-profile">
-            <div className="avatar">{currentUser.firstName?.[0]}{currentUser.lastName?.[0] || ''}</div>
+            <div className="avatar">{(currentUser.fullName?.[0] || currentUser.username?.[0] || 'U').toUpperCase()}</div>
             <div className="user-info">
-              <h1>{t('dashboard.greeting', 'Namaste')}, {currentUser.fullName || currentUser.firstName}!</h1>
+              <h1>{t('dashboard.greeting', 'Namaste')}, {currentUser.fullName || currentUser.username || 'User'}!</h1>
               <div className="location-tag">
                 <MapPin size={14} />
                 {locationLoading
@@ -144,8 +174,8 @@ export default function WorkerDashboard() {
       </header>
 
       <div className="dashboard-tabs" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem', padding: '0 2rem' }}>
-        <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')} style={{ padding: '0.75rem 1.5rem', background: 'transparent', color: activeTab === 'overview' ? 'var(--primary-400)' : 'var(--text-muted)', borderBottom: activeTab === 'overview' ? '2px solid var(--primary-400)' : 'none', fontWeight: 600 }}>Overview</button>
-        <button className={`tab-btn ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')} style={{ padding: '0.75rem 1.5rem', background: 'transparent', color: activeTab === 'payments' ? 'var(--primary-400)' : 'var(--text-muted)', borderBottom: activeTab === 'payments' ? '2px solid var(--primary-400)' : 'none', fontWeight: 600 }}>Payments</button>
+        <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')} style={{ padding: '0.75rem 1.5rem', background: 'transparent', color: activeTab === 'overview' ? 'var(--primary-400)' : 'var(--text-muted)', borderBottom: activeTab === 'overview' ? '2px solid var(--primary-400)' : 'none', fontWeight: 600 }}>{t('common.overview', 'Overview')}</button>
+        <button className={`tab-btn ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')} style={{ padding: '0.75rem 1.5rem', background: 'transparent', color: activeTab === 'payments' ? 'var(--primary-400)' : 'var(--text-muted)', borderBottom: activeTab === 'payments' ? '2px solid var(--primary-400)' : 'none', fontWeight: 600 }}>{t('common.payments', 'Payments')}</button>
       </div>
 
       <div className="dashboard-grid">
@@ -238,7 +268,12 @@ export default function WorkerDashboard() {
                 </div>
               </div>
             ) : (
-              <div style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No active policy found.</div>
+              <div style={{ padding: '1.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                <p style={{ marginBottom: '1rem' }}>No active policy found. Get covered now to protect your income from weather and disruptions.</p>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn-primary" onClick={() => setShowUpgradeModal(true)}>Get Covered / Renew Plan</button>
+                </div>
+              </div>
             )}
           </div>
 
@@ -249,8 +284,13 @@ export default function WorkerDashboard() {
                 <h3>Upgrade / Change Plan</h3>
                 <p>Select a new protection level for next week</p>
                 <div className="upgrade-options">
-                  {packages.map(pkg => (
-                    <div key={pkg.id} className={`upgrade-card ${pkg.id === userPolicy.packageId ? 'active' : ''}`} onClick={() => handleUpgrade(pkg)}>
+                  {packages.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem' }}>
+                      <span className="loader" style={{ margin: '0 auto' }}></span>
+                      <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Calculating real-time ML risk packages...</p>
+                    </div>
+                  ) : packages.map(pkg => (
+                    <div key={pkg.id} className={`upgrade-card ${pkg.id === userPolicy?.packageId ? 'active' : ''}`} onClick={() => handleUpgrade(pkg)}>
                       <div className="u-header">
                         <strong>{pkg.name}</strong>
                         <span className="u-price">₹{pkg.premium}/wk</span>

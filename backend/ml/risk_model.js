@@ -117,10 +117,56 @@ function calculateRiskScore({ state, city, weeklyIncome, platform, weatherData }
 /**
  * Generate 3 dynamically-priced insurance packages
  */
-function generatePackages({ state, weeklyIncome, riskScore, riskLevel }) {
+async function generatePackages({ state, weeklyIncome, riskScore, riskLevel }) {
   const income = weeklyIncome || 7000;
 
-  // Base premium percentages
+  try {
+    const axios = require('axios');
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (GEMINI_API_KEY) {
+      const prompt = `You are the GigCover ML Risk Pricing Engine.
+Input parameters:
+- State: "${state}"
+- Weekly Income: ${income}
+- Risk Score: ${riskScore}/100
+- Risk Level: "${riskLevel}"
+
+Based strictly on this data, return EXACTLY a JSON array of 3 insurance packages. Do not output anything else (no markdown text, no backticks).
+Format:
+[
+  {
+    "id": "basic",
+    "name": "Essential Guard",
+    "premium": <compute: income * 0.025 * risk_multiplier>,
+    "coverage": <compute: income * 0.5>,
+    "dailyCoverage": <coverage / 7>,
+    "riskLevel": "${riskLevel}",
+    "triggers": { "rain": "Rain > 50mm", "aqi": "AQI > 400", "temp": "Temp > 45C" },
+    "inclusions": ["Heavy Rain: 12%", "AQI: 10%"],
+    "exclusions": ["Flooding"]
+  },
+  { "id": "standard", "name": "Smart Partner", ... },
+  { "id": "premium", "name": "Total Resilience", ... }
+]`;
+
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+
+      let text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const generated = JSON.parse(text);
+      if (Array.isArray(generated) && generated.length === 3) {
+        return generated;
+      }
+    }
+  } catch (err) {
+    console.error('Gemini dynamic pricing error, falling back to ML logic:', err.message);
+  }
+
+  // Base premium percentages (Fallback Statistical Model)
   const basePcts = { basic: 0.025, standard: 0.04, premium: 0.06 };
 
   // Risk adjustment multiplier

@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { MessageCircle, X, Send, Bot, User, Sparkles, Shield, Cloud, FileText, Zap } from 'lucide-react';
 import './Chatbot.css';
 
-const GEMINI_API_KEY = 'AIzaSyBuVRgqXE-pt3KpSkfurumn3zyOunsijTk';
+
 
 const QUICK_REPLIES = [
   { icon: <Shield size={13} />, label: 'My Coverage', query: 'What does my current insurance policy cover?' },

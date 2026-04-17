@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
       weatherData
     });
 
-    const packages = generatePackages({
+    const packages = await generatePackages({
       state,
       weeklyIncome,
       riskScore,
