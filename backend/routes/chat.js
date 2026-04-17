@@ -39,9 +39,14 @@ function getFallbackResponse(message) {
 router.post('/', async (req, res) => {
   const { message, history = [] } = req.body;
 
-  if (!message || !message.trim()) {
-    console.error('[Chat] Received empty message');
-    return res.status(400).json({ success: false, error: 'Message is required', reply: 'I received an empty message. How can I help?', message: 'I received an empty message.' });
+  if (!req.body || !message || !message.trim()) {
+    console.error('[Chat] Received malformed or empty message');
+    return res.status(200).json({ 
+      success: true, 
+      reply: 'I received an empty message. How can I help you with your GigCover policy today? 🛡️', 
+      message: 'I received an empty message.',
+      source: 'error_prevention'
+    });
   }
 
   // If no API key, return intelligent fallback immediately
@@ -77,11 +82,11 @@ Guidelines: Be concise (2-4 sentences), friendly, use ₹ for currency, answer i
     console.log('[Chat] Sending request to Gemini API...');
     
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       { contents },
       { 
         headers: { 'Content-Type': 'application/json' },
-        timeout: 15000
+        timeout: 8000
       }
     );
 
@@ -105,9 +110,9 @@ Guidelines: Be concise (2-4 sentences), friendly, use ₹ for currency, answer i
         console.error('[Chat] CRITICAL: The API Key provided appears invalid for the Gemini AI Studio endpoint.');
     }
 
-    // On any error — return smart fallback, NOT a crash
+    // On any error — return smart fallback, NOT a crash/500
     const fallback = getFallbackResponse(message);
-    return res.json({
+    return res.status(200).json({
       success: true,
       reply: fallback,
       message: fallback,
