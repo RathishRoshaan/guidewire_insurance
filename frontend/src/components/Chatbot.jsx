@@ -61,13 +61,17 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      // Use relative path for Vercel compatibility or fallback to localhost
+      // If the current window is on guidewire-insurance.vercel.app, we try to hit /_backend/api/chat
+      const isVercel = window.location.hostname.includes('vercel.app');
+      const API_BASE = isVercel ? '/_backend' : (import.meta.env.VITE_API_URL || 'http://localhost:5000');
+      
       const history = messages.slice(1).map(m => ({
         role: m.role === 'assistant' ? 'bot' : 'user',
         content: m.content
       }));
 
-      const res = await fetch(`${API_BASE_URL}/api/chat`, {
+      const res = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -76,15 +80,20 @@ export default function Chatbot() {
         }),
       });
 
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server responded with ${res.status}`);
+      }
+
       const data = await res.json();
-      const reply = data.reply || data.message || 'Sorry, I couldn\'t process that. Please try again.';
+      const reply = data.reply || data.message || 'Sorry, I received an empty response from my AI service.';
 
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (err) {
       console.error('Chatbot error:', err);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I\'m having trouble connecting to my service. Please try again later. 🔄',
+        content: `Sorry, I'm having trouble: ${err.message}. Please try again later. 🔄`,
       }]);
     }
 

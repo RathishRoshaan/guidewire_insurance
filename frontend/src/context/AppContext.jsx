@@ -4,7 +4,7 @@ import * as backendApi from '../services/api';
 
 const AppContext = createContext();
 
-const GEMINI_API_KEY = 'AIzaSyBuVRgqXE-pt3KpSkfurumn3zyOunsijTk';
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useApp = () => {
@@ -95,100 +95,120 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   // ── GPS + Reverse geocode location detection ──
-  const detectLocation = useCallback(async () => {
-    if (!navigator.geolocation) {
-      addToast('Geolocation not supported by your browser', 'warning');
-      return;
-    }
-    setLocationLoading(true);
-    addToast('Detecting your location...', 'info', 2000);
+  // Returns a Promise that resolves with the matched location object (or null)
+  const detectLocation = useCallback(() => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        addToast('Geolocation not supported by your browser', 'warning');
+        resolve(null);
+        return;
+      }
+      setLocationLoading(true);
+      addToast('Detecting your location...', 'info', 2000);
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          // Reverse geocode via OpenStreetMap Nominatim
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-            { headers: { 'Accept-Language': 'en' } }
-          );
-          const geo = await res.json();
-          const city = geo.address?.city || geo.address?.town || geo.address?.county || 'Unknown';
-          const state = geo.address?.state || '';
-
-          // Try to match against our CITIES list
-          const matched = CITIES.find(c =>
-            city.toLowerCase().includes(c.name.toLowerCase()) ||
-            c.name.toLowerCase().includes(city.toLowerCase())
-          );
-
-          const locationObj = matched || {
-            id: 'detected',
-            name: city,
-            state,
-            lat: latitude,
-            lng: longitude,
-            riskMultiplier: 1.0,
-          };
-
-          setCurrentLocation(locationObj);
-          setLocationLoading(false);
-          addToast(`📍 Location: ${city}, ${state}`, 'success');
-
-          // Fetch real weather for detected location
-          setWeatherLoading(true);
-          const wData = await fetchRealWeather(latitude, longitude);
-          if (wData) setWeatherData(wData);
-          setWeatherLoading(false);
-        } catch (err) {
-          console.error('Geocode failed:', err);
-          setLocationLoading(false);
-          addToast('Could not resolve location name', 'warning');
-        }
-      },
-      async (err) => {
-        try {
-          const ipRes = await fetch('https://ipapi.co/json/');
-          const ipData = await ipRes.json();
-          if (ipData.city && ipData.latitude) {
-            const matched = CITIES.find(c =>
-              ipData.city.toLowerCase().includes(c.name.toLowerCase()) ||
-              c.name.toLowerCase().includes(ipData.city.toLowerCase())
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          try {
+            // Reverse geocode via OpenStreetMap Nominatim
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+              { headers: { 'Accept-Language': 'en' } }
             );
-            const locationObj = matched || {
-              id: 'ip-detected',
-              name: ipData.city,
-              state: ipData.region,
-              lat: ipData.latitude,
-              lng: ipData.longitude,
-              riskMultiplier: 1.0,
-            };
+            const geo = await res.json();
+            const city = geo.address?.city || geo.address?.town || geo.address?.county || 'Unknown';
+            const state = geo.address?.state || '';
+
+            // Try to match against our CITIES list
+            const matched = CITIES.find(c =>
+              city.toLowerCase().includes(c.name.toLowerCase()) ||
+              c.name.toLowerCase().includes(city.toLowerCase())
+            );
+
+            const locationObj = matched
+              ? { ...matched, cityId: matched.id }
+              : {
+                  id: 'detected',
+                  cityId: null,
+                  name: city,
+                  state,
+                  lat: latitude,
+                  lng: longitude,
+                  riskMultiplier: 1.0,
+                };
+
             setCurrentLocation(locationObj);
             setLocationLoading(false);
-            addToast(`📍 Network Location: ${ipData.city}`, 'success');
-            
+            addToast(`📍 Location: ${city}, ${state}`, 'success');
+
+            // Fetch real weather for detected location
             setWeatherLoading(true);
-            const wData = await fetchRealWeather(ipData.latitude, ipData.longitude);
+            const wData = await fetchRealWeather(latitude, longitude);
             if (wData) setWeatherData(wData);
             setWeatherLoading(false);
-            return;
+
+            resolve(locationObj);
+          } catch (err) {
+            console.error('Geocode failed:', err);
+            setLocationLoading(false);
+            addToast('Could not resolve location name', 'warning');
+            resolve(null);
           }
-        } catch (ipErr) {
-           console.error('IP Fallback failed', ipErr);
-        }
-        
-        setLocationLoading(false);
-        addToast(`Location denied: ${err.message}. Defaulting to Mumbai.`, 'warning');
-        
-        const defaultCity = CITIES.find(c => c.name === 'Mumbai');
-        if (defaultCity) {
-           setCurrentLocation(defaultCity);
-           const wData = await fetchRealWeather(defaultCity.lat, defaultCity.lng);
-           if (wData) setWeatherData(wData);
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+        },
+        async (err) => {
+          // GPS denied/failed – try IP-based fallback
+          try {
+            const ipRes = await fetch('https://ipapi.co/json/');
+            const ipData = await ipRes.json();
+            if (ipData.city && ipData.latitude) {
+              const matched = CITIES.find(c =>
+                ipData.city.toLowerCase().includes(c.name.toLowerCase()) ||
+                c.name.toLowerCase().includes(ipData.city.toLowerCase())
+              );
+              const locationObj = matched
+                ? { ...matched, cityId: matched.id }
+                : {
+                    id: 'ip-detected',
+                    cityId: null,
+                    name: ipData.city,
+                    state: ipData.region,
+                    lat: ipData.latitude,
+                    lng: ipData.longitude,
+                    riskMultiplier: 1.0,
+                  };
+
+              setCurrentLocation(locationObj);
+              setLocationLoading(false);
+              addToast(`📍 Network Location: ${ipData.city}`, 'success');
+
+              setWeatherLoading(true);
+              const wData = await fetchRealWeather(ipData.latitude, ipData.longitude);
+              if (wData) setWeatherData(wData);
+              setWeatherLoading(false);
+
+              resolve(locationObj);
+              return;
+            }
+          } catch (ipErr) {
+            console.error('IP Fallback failed', ipErr);
+          }
+
+          setLocationLoading(false);
+          addToast(`Location denied: ${err.message}. Defaulting to Mumbai.`, 'warning');
+
+          const defaultCity = CITIES.find(c => c.name === 'Mumbai');
+          if (defaultCity) {
+            setCurrentLocation({ ...defaultCity, cityId: defaultCity.id });
+            const wData = await fetchRealWeather(defaultCity.lat, defaultCity.lng);
+            if (wData) setWeatherData(wData);
+            resolve({ ...defaultCity, cityId: defaultCity.id });
+          } else {
+            resolve(null);
+          }
+        },
+        { enableHighAccuracy: false, timeout: 8000 }
+      );
+    });
   }, [addToast]);
 
   // ── Fetch weather for a specific city (by coordinates) ──
@@ -364,14 +384,21 @@ export const AppProvider = ({ children }) => {
       return;
     }
     try {
-      const userId = currentUser.username || currentUser.id || currentUser._id;
+      const vid = currentUser.id || currentUser.username || currentUser._id;
+      
+      // Try to find the active policy ID from state (keeps session alive and linked)
+      const policies = data?.policies || [];
+      const activePolicy = policies.find(p => (p.workerId === vid || p.userId === vid) && p.status === 'active');
+
       const claimData = {
-        userId,
-        workerId: userId,
+        workerId: vid,
+        userId: vid,
+        policyId: activePolicy?.policyId || activePolicy?.id || '',
         triggerType: 'Manual Request',
         description: reason || 'Manual claim submitted by worker',
         claimedAmount: 0,
       };
+      
       const res = await backendApi.submitManualClaim(claimData);
       if (res?.success) {
         addToast('✅ Manual claim submitted for admin review!', 'success');
@@ -383,7 +410,7 @@ export const AppProvider = ({ children }) => {
       console.error('submitManualClaim error:', err);
       addToast(`Failed to submit claim: ${err.message}`, 'error');
     }
-  }, [currentUser, addToast, fetchGlobalData]);
+  }, [currentUser, data, addToast, fetchGlobalData]);
 
   // ── Simulate disruption trigger ──
   const triggerDisruption = useCallback((cityId, disruptionId) => {
@@ -602,7 +629,8 @@ Return ONLY valid JSON strictly in this structural format without any markdown b
     DISRUPTION_TYPES,
     getBackendRisk,
     verifyClaimWithBackend,
-    submitManualClaim
+    submitManualClaim,
+    fetchGlobalData
   };
 
   return (

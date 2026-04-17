@@ -16,10 +16,11 @@ export default function WorkerDashboard() {
     data, currentUser, currentLocation, locationLoading,
     weatherData, generateRiskAssessment, weatherLoading,
     updatePolicy, createPolicy, getPackages, PLAN_FEATURES, CITIES, PLATFORMS,
-    getBackendRisk
+    getBackendRisk, fetchGlobalData
   } = useApp();
   const [activeTab, setActiveTab] = useState('overview');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [confirmPkg, setConfirmPkg] = useState(null);
   const [backendRisk, setBackendRisk] = useState(null);
   
   // Real live backend metrics
@@ -87,28 +88,34 @@ export default function WorkerDashboard() {
   }, [currentWeather, getBackendRisk]);
 
   // Handle plan change or create
-  const handleUpgrade = async (pkg) => {
-    if (!window.confirm(`Are you sure you want to select the ${pkg.name} plan for ₹${pkg.premium}/wk?`)) return;
-    
+  const handleUpgrade = (pkg) => {
+    // Show inline confirmation instead of window.confirm (which causes navigation issues)
+    setConfirmPkg(pkg);
+  };
+
+  const confirmUpgrade = async () => {
+    const pkg = confirmPkg;
+    setConfirmPkg(null);
+    if (!pkg) return;
+
     if (!userPolicy) {
       await createPolicy({
-          workerId: currentUser.id || currentUser.username,
-          workerName: currentUser.fullName || currentUser.username || 'User',
-          city: currentLocation?.name || 'Local',
-          platform: currentUser.platform || 'General',
-          packageId: pkg.id,
-          packageName: pkg.name,
-          weeklyPremium: pkg.premium,
-          maxCoverage: pkg.coverage,
-          included: pkg.included || pkg.inclusions,
-          status: 'active',
+        workerId: currentUser.id || currentUser.username,
+        workerName: currentUser.fullName || currentUser.username || 'User',
+        city: currentLocation?.name || 'Local',
+        platform: currentUser.platform || 'General',
+        packageId: pkg.id,
+        packageName: pkg.name,
+        weeklyPremium: pkg.premium,
+        maxCoverage: pkg.coverage,
+        included: pkg.included || pkg.inclusions,
+        status: 'active',
       });
-      // Optionally trigger a reload or context refetch, AppContext createPolicy handles basic refresh or toast.
-      setTimeout(() => window.location.reload(), 1500); 
     } else {
       updatePolicy(userPolicy.id, pkg);
-      setTimeout(() => window.location.reload(), 1500); 
     }
+    // Refresh data in-place without a page reload (keeps session alive)
+    if (fetchGlobalData) fetchGlobalData();
     setShowUpgradeModal(false);
   };
 
@@ -277,33 +284,50 @@ export default function WorkerDashboard() {
             )}
           </div>
 
-          {/* Upgrade Modal Overlay (Simulated) */}
+          {/* Upgrade Modal Overlay */}
           {showUpgradeModal && (
-            <div className="modal-overlay">
+            <div className="modal-overlay" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) { setShowUpgradeModal(false); setConfirmPkg(null); } }}>
               <div className="glass-card upgrade-modal animate-scale-in">
-                <h3>Upgrade / Change Plan</h3>
-                <p>Select a new protection level for next week</p>
-                <div className="upgrade-options">
-                  {packages.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2rem' }}>
-                      <span className="loader" style={{ margin: '0 auto' }}></span>
-                      <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Calculating real-time ML risk packages...</p>
+                {confirmPkg ? (
+                  /* Inline confirmation — replaces window.confirm */
+                  <>
+                    <h3>Confirm Plan Selection</h3>
+                    <p style={{ margin: '1rem 0', color: 'var(--text-secondary)' }}>
+                      Switch to <strong style={{ color: 'var(--primary-400)' }}>{confirmPkg.name}</strong> for <strong style={{ color: 'var(--accent-400)' }}>₹{confirmPkg.premium}/wk</strong>?
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+                      <button className="btn-primary" style={{ flex: 1 }} onClick={confirmUpgrade}>Yes, Confirm</button>
+                      <button className="btn-secondary" style={{ flex: 1 }} onClick={() => setConfirmPkg(null)}>Cancel</button>
                     </div>
-                  ) : packages.map(pkg => (
-                    <div key={pkg.id} className={`upgrade-card ${pkg.id === userPolicy?.packageId ? 'active' : ''}`} onClick={() => handleUpgrade(pkg)}>
-                      <div className="u-header">
-                        <strong>{pkg.name}</strong>
-                        <span className="u-price">₹{pkg.premium}/wk</span>
-                      </div>
-                      <div className="u-coverage">₹{pkg.coverage.toLocaleString()} coverage</div>
-                      <div className="u-details" style={{ fontSize: '0.7rem', marginTop: '0.5rem', opacity: 0.8 }}>
-                        <div style={{ color: 'var(--success-400)' }}>✓ {(pkg.inclusions || pkg.included)?.slice(0, 2).join(', ')}...</div>
-                        <div style={{ color: 'var(--text-muted)' }}>× {(pkg.exclusions || pkg.excluded)?.slice(0, 2).join(', ')}...</div>
-                      </div>
+                  </>
+                ) : (
+                  /* Plan selection list */
+                  <>
+                    <h3>Upgrade / Change Plan</h3>
+                    <p>Select a new protection level for next week</p>
+                    <div className="upgrade-options">
+                      {packages.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                          <span className="loader" style={{ margin: '0 auto' }}></span>
+                          <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Calculating real-time ML risk packages...</p>
+                        </div>
+                      ) : packages.map(pkg => (
+                        <div key={pkg.id} className={`upgrade-card ${pkg.id === userPolicy?.packageId ? 'active' : ''}`} onClick={() => handleUpgrade(pkg)}>
+                          <div className="u-header">
+                            <strong>{pkg.name}</strong>
+                            <span className="u-price">₹{pkg.premium}/wk</span>
+                          </div>
+                          <div className="u-coverage">₹{pkg.coverage.toLocaleString()} coverage</div>
+                          <div className="u-details" style={{ fontSize: '0.7rem', marginTop: '0.5rem', opacity: 0.8 }}>
+                            <div style={{ color: 'var(--success-400)' }}>✓ {(pkg.inclusions || pkg.included)?.slice(0, 2).join(', ')}...</div>
+                            <div style={{ color: 'var(--text-muted)' }}>× {(pkg.exclusions || pkg.excluded)?.slice(0, 2).join(', ')}...</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <button className="btn-secondary full-width" onClick={() => setShowUpgradeModal(false)}>Cancel</button>
+                    <button className="btn-secondary full-width" onClick={() => setShowUpgradeModal(false)}>Cancel</button>
+                  </>
+                )}
               </div>
             </div>
           )}

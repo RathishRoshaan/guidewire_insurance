@@ -160,6 +160,7 @@ router.post('/request', async (req, res) => {
       claimId,
       userId: resolvedUserId,
       workerId: resolvedUserId,
+      workerName: (await Worker.findOne({ workerId: resolvedUserId }))?.fullName || 'Worker',
       policyId: resolvedPolicyId,
       disruptionType: triggerType || description || 'Manual Request',
       claimAmount: claimedAmount || 0,

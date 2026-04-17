@@ -45,4 +45,49 @@ router.get('/', async (req, res) => {
   }
 });
 
+// POST /api/policies — Create a new policy
+router.post('/', async (req, res) => {
+  try {
+    const { 
+      workerId, workerName, city, platform, 
+      packageId, packageName, weeklyPremium, 
+      maxCoverage, coveredDisruptions, exclusions 
+    } = req.body;
+
+    if (!workerId || !packageId) {
+      return res.status(400).json({ error: 'Missing required fields: workerId, packageId' });
+    }
+
+    const policyId = 'POL-' + String(Date.now()).slice(-6);
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 7); // 7-day policy
+
+    const newPolicy = new Policy({
+      policyId,
+      workerId,
+      userId: workerId, // In this app, workerId and userId are often the same string
+      workerName: workerName || 'Worker',
+      city: city || 'Unknown',
+      platform: platform || 'Swiggy',
+      packageId,
+      packageName,
+      weeklyPremium,
+      maxCoverage,
+      coveredDisruptions: coveredDisruptions || [],
+      exclusions: exclusions || [],
+      startDate,
+      endDate,
+      status: 'active'
+    });
+
+    await newPolicy.save();
+    console.log(`[Policies] New policy created: ${policyId} for ${workerId}`);
+    res.status(201).json(newPolicy);
+  } catch (err) {
+    console.error('Create policy error:', err);
+    res.status(500).json({ error: 'Failed to create policy' });
+  }
+});
+
 module.exports = router;

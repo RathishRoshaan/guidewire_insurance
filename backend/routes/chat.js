@@ -40,7 +40,8 @@ router.post('/', async (req, res) => {
   const { message, history = [] } = req.body;
 
   if (!message || !message.trim()) {
-    return res.status(400).json({ success: false, error: 'Message is required' });
+    console.error('[Chat] Received empty message');
+    return res.status(400).json({ success: false, error: 'Message is required', reply: 'I received an empty message. How can I help?', message: 'I received an empty message.' });
   }
 
   // If no API key, return intelligent fallback immediately
@@ -68,11 +69,13 @@ Guidelines: Be concise (2-4 sentences), friendly, use ₹ for currency, answer i
       { role: 'model', parts: [{ text: 'Understood! I am GigBot, ready to help GigCover users.' }] },
       ...history.slice(-6).map(h => ({
         role: h.role === 'bot' ? 'model' : 'user',
-        parts: [{ text: h.content }]
+        parts: [{ text: h.content || '' }]
       })),
       { role: 'user', parts: [{ text: message }] }
     ];
 
+    console.log('[Chat] Sending request to Gemini API...');
+    
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       { contents },
@@ -82,8 +85,13 @@ Guidelines: Be concise (2-4 sentences), friendly, use ₹ for currency, answer i
       }
     );
 
-    const reply = response.data?.candidates?.[0]?.content?.parts?.[0]?.text
-      || getFallbackResponse(message);
+    const reply = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!reply) {
+      console.warn('[Chat] Gemini returned empty response or was filtered');
+      const fallback = getFallbackResponse(message);
+      return res.json({ success: true, reply: fallback, message: fallback, source: 'safety_fallback' });
+    }
 
     return res.json({ success: true, reply, message: reply, source: 'gemini' });
 
@@ -92,14 +100,22 @@ Guidelines: Be concise (2-4 sentences), friendly, use ₹ for currency, answer i
     const errData = err.response?.data;
     console.error(`[Chat] Gemini error (HTTP ${status}):`, errData?.error?.message || err.message);
 
-    // On 429 (quota), 503, or any error — return smart fallback, NOT a crash
+    // If the error is 400 and mentions API key, it's likely the key format is invalid
+    if (status === 400 && errData?.error?.message?.toLowerCase().includes('key')) {
+        console.error('[Chat] CRITICAL: The API Key provided appears invalid for the Gemini AI Studio endpoint.');
+    }
+
+    // On any error — return smart fallback, NOT a crash
     const fallback = getFallbackResponse(message);
     return res.json({
       success: true,
       reply: fallback,
       message: fallback,
-      source: 'fallback',
-      _debug: status === 429 ? 'quota_exceeded' : 'api_error'
+      source: 'error_fallback',
+      _debug: { 
+        status: status || 'network_error', 
+        error: errData?.error?.message || err.message 
+      }
     });
   }
 });
